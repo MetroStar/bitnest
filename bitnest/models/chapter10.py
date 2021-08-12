@@ -3,7 +3,6 @@ Chapter 10 Specification
 https://www.irig106.org/docs/106-07/chapter10.pdf
 
 """
-
 from enum import Enum
 
 from bitnest.types import Struct, UnsignedInteger, SignedInteger, Boolean, BitsEnum, Bits, Union
