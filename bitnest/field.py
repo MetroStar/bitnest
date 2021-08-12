@@ -35,3 +35,9 @@ class Union(Field):
 
 class Struct:
     pass
+
+
+class Vector:
+    def __init__(self, klass, length):
+        self.klass = klass
+        self.length

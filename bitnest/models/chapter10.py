@@ -5,7 +5,7 @@ https://www.irig106.org/docs/106-07/chapter10.pdf
 """
 from enum import Enum
 
-from bitnest.types import Struct, UnsignedInteger, SignedInteger, Boolean, BitsEnum, Bits, Union
+from bitnest.types import Struct, UnsignedInteger, SignedInteger, Boolean, BitsEnum, Bits, Union, FieldRef
 
 
 class RecieveTransmitEnum(enum.Enum):
@@ -39,69 +39,57 @@ class CommandWord(Struct):
 class ModeCommand(CommandWord):
     __name__ = "Mode Command"
 
-    @classmethod
-    def conditions(cls):
-        return [
-            # location_sub_address = 0 or 31
-            (cls.location_sub_address == 0x0) | (cls.location_sub_address == 0x1f)
-        ]
+    conditions = [
+        # location_sub_address = 0 or 31
+        (FieldRef('location_sub_address') == 0x0) | (FieldRef('location_sub_address') == 0x1f)
+    ]
 
 
 class BroadcastModeCommand(CommandWord):
     __name__ = "Broadcast Mode Command"
 
-    @classmethod
-    def conditions(cls):
-        return [
-            # remote terminal address = 31
-            (cls.remote_terminal_address == 0x1f),
-            # location_sub_address = 0 or 31
-            (cls.location_sub_address == 0x0) | (cls.location_sub_address == 0x1f)
-        ]
+    conditions =  [
+        # remote terminal address = 31
+        (FieldRef('remote_terminal_address') == 0x1f),
+        # location_sub_address = 0 or 31
+        (FieldRef('location_sub_address') == 0x0) | (FieldRef('location_sub_address') == 0x1f)
+    ]
 
 
 class TransmitCommand(CommandWord):
     __name__ = "Transmit Command"
 
-    @classmethod
-    def conditions(cls):
-        return [
-            (cls.recieve_transmit == RecieveTransmitEnum.TRANSMIT),
-        ]
+    conditions = [
+        (FieldRef('recieve_transmit') == RecieveTransmitEnum.TRANSMIT),
+    ]
 
 
 class RecieveCommand(CommandWord):
     __name__ = "Recieve Command"
 
-    @classmethod
-    def conditions(cls):
-        return [
-            (cls.recieve_transmit == RecieveTransmitEnum.RECIEVE),
-        ]
+    conditions = [
+        (FieldRef('recieve_transmit') == RecieveTransmitEnum.RECIEVE),
+    ]
 
 
 class BroadcastRecieveCommand(CommandWord):
     __name__ = "Broadcast Recieve Command"
 
-    @classmethod
-    def conditions(cls):
-        return [
-            # remote terminal address = 31
-            (cls.remote_terminal_address == 0x1f),
-            (cls.recieve_transmit == RecieveTransmitEnum.RECIEVE),
-        ]
+    conditions = [
+        # remote terminal address = 31
+        (FieldRef('remote_terminal_address') == 0x1f),
+        (FieldRef('recieve_transmit') == RecieveTransmitEnum.RECIEVE),
+    ]
 
 
 class BroadcastTransmitCommand(CommandWord):
     __name__ = "Broadcast Transmit Command"
 
-    @classmethod
-    def conditions(cls):
-        return [
-            # remote terminal address = 31
-            (cls.remote_terminal_address == 0x1f),
-            (cls.recieve_transmit == RecieveTransmitEnum.TRANSMIT),
-        ]
+    conditions = [
+        # remote terminal address = 31
+        (FieldRef('remote_terminal_address') == 0x1f),
+        (FieldRef('recieve_transmit') == RecieveTransmitEnum.TRANSMIT),
+    ]
 
 
 class StatusWord(Struct):
@@ -122,8 +110,12 @@ class StatusWord(Struct):
 
 
 class GapTimesWord(Struct):
+    """
+    The Gap Times Word indicates the number of tenths of microseconds
+    in length of the internal gaps within a single transaction
+    """
+
     __name__ = "Gap Times Word"
-    __help__ = 'The Gap Times Word indicates the number of tenths of microseconds in length of the internal gaps within a single transaction'
 
     fields = [
         UnsignedInteger('gap_1', 8, help='measures the time between the command or data word and the first (and only) status word in the message'),
@@ -167,6 +159,120 @@ class MILSTD_1553_Intra_Packet_Data_Header(Struct):
     ]
 
 
+class ControllerToRTTransfer(Struct):
+    __name__ = "Controller to Remote Terminal Transfer"
+
+    fields = [
+        RecieveCommand,
+        Vector(DataWord, length=FieldRef('RecieveCommand.number_of_words')),
+        StatusWord
+    ]
+
+    conditions = [
+        (FieldRef('StatusWord.remote_terminal_address') == 0x31),
+    ]
+
+
+
+class RTToControllerTransfer(Struct):
+    __name__ = "Remote Terminal to Controller Transfer"
+
+    fields = [
+        TransmitCommand,
+        StatusWord,
+        Vector(DataWord, length=FieldRef('TransmitCommand.number_of_words'))
+    ]
+
+    conditions = [
+        (FieldRef('TransmitCommmand.remote_terminal_address') == 0x31),
+    ]
+
+
+class RTToRTTransfer(Struct):
+    __name__ = "Remote Terminal to Remote Terminal Transfer"
+
+    fields = [
+        RecieveCommand,
+        TransmitCommand,
+        StatusWord,
+        Vector(DataWord, length=FieldRef('RecieveCommand.number_of_words')),
+        StatusWord,
+    ]
+
+    conditions = [
+        (FieldRef('RecieveCommmand.remote_terminal_address') == 0x31),
+        # TODO: Ambiguous (should refer to second entry)
+        (FieldRef('StatusWord.remote_terminal_address') == 0x31)
+    ]
+
+
+class ModeCommandWithoutData(Struct):
+    __name__ = "Mode Command without Data Word"
+
+    fields = [
+        ModeCommand,
+        StatusWord
+    ]
+
+
+class ModeCommandWithDataTransmit(Struct):
+    __name__ = "Mode Command With Data Word (Transmit)"
+
+    fields = [
+        ModeCommand,
+        StatusWord,
+        DataWord,
+    ]
+
+
+class ModeCommandWithDataRecieve(Struct):
+    __name__ = "Mode Command With Data Word (Recieve)"
+
+    fields = [
+        ModeCommand,
+        DataWord,
+        StatusWord,
+    ]
+
+
+class BroadcastControllerToRTTransfer(Struct):
+    __name__ = "Broadcast Controller to Remote Terminal(s) Transfer"
+
+
+    fields = [
+        BroadcastRecieveCommand,
+        Vector(DataWord, length=FieldRef('BroadcastRecieveCommand.number_of_words'))
+    ]
+
+
+class BroadcastRTToRTTransfer(Struct):
+    __name__ = "Broadcast Remote Terminal to Remote Terminal Transfer"
+
+    fields = [
+        BroadcastRecieveCommand,
+        TransmitCommand,
+        StatusWord,
+        Vector(DataWord, length=FieldRef('BroadcastRecieveCommand.number_of_words'))
+    ]
+
+
+class BroadcastModeCommandWithoutData(Struct):
+    __name__ = "Broadcast Mode Command Without Data Word"
+
+    fields = [
+        BroadcastModeCommand
+    ]
+
+
+class BroadcastModeCommandWithData(Struct):
+    __name__ = "Broadcast Mode Command With Data"
+
+    fields = [
+        BroadcastModeCommand,
+        DataWord,
+    ]
+
+
 class MILSTD_1553_Intra_Packet_Header(Struct):
     __name__ = "MIL-STD-1553 Intra-Packet Header"
 
@@ -174,26 +280,16 @@ class MILSTD_1553_Intra_Packet_Header(Struct):
         UnsignedInteger('intra_packet_time_stamp', 8 * 8),
         MILSTD_1553_Intra_Packet_Data_Header,
         Union([
-            # Controller to RT Transfer
-            (RecieveCommand, DataWord * N, StatusWord),
-            # RT to Controller Transfer
-            (TransmitCommand, StatusWord, DataWord * N),
-            # RT to RT Transfers
-            (RecieveCommand, TransmitCommand, StatusWord, DataWord * N, StatusWord),
-            # Mode Command Without Data Word
-            (ModeCommand, StatusWord),
-            # Mode Command With Data Word (Transmit)
-            (ModeCommand, StatusWord, DataWord),
-            # Mode Command With Data Word (Recieve)
-            (ModeCommand, DataWord, StatusWord),
-            # Controller to RT(s) Transfer
-            (BroadcastRecieveCommand, DataWord * N),
-            # RT to RT(s) Transfers
-            (BroadcastRecieveCommand, TransmitCommand, StatusWord, DataWord * N),
-            # Mode Command Without Data Word (Broadcast)
-            (BroadcastModeCommand,),
-            # Mode Command With Data Word (Broadcast).
-            (BroadcastModeCommand, DataWord),
+            ControllerToRTTransfer,
+            RTToControllerTransfer,
+            RTToRTTransfer,
+            ModeCommandWithoutData,
+            ModeCommandWithDataTransmit,
+            ModeCommandWithDataRecieve,
+            BroadcastControllerToRTTransfer,
+            BroadcastRTToRTTransfer,
+            BroadcastModeCommandWithoutData,
+            BroadcastModeCommandWithData,
         ])
     ]
 
@@ -215,5 +311,5 @@ class MILSTD_1553_Data_Packet_Format_1(Struct):
         BitsEnum('time_tag_bits', 2, TimeTagBitsEnum, help="indicate which bit of the MIL-STD-1553 message the Intra-Packet Header time tags"),
         Bits('reserved', 6),
         UnsignedInteger('message_count', 24, help="indicates the binary value of the number of messages included in the packet.  An integral number of complete messages will be in each packe"),
-        MILSTD_1553_Intra_Packet_Header * N
+        Vector(MILSTD_1553_Intra_Packet_Header, length=FieldRef('message_count')),
     ]
