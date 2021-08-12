@@ -26,7 +26,6 @@ class RTToController(Struct):
         (FieldRef('CommandWord.remote_terminal_address') == 0x1f)
     ]
 
-
 class ControllerToRT(Struct):
     __name__ = "Controller to Remote Terminal"
 
@@ -34,6 +33,9 @@ class ControllerToRT(Struct):
         CommandWord,
     ]
 
+    conditions = [
+        (FieldRef('CommandWord.number_of_words') == 0x0)
+    ]
 
 class MILSTD_1553_Message(Struct):
     fields = [
