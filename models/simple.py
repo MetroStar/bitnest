@@ -38,6 +38,13 @@ class ControllerToRT(Struct):
     ]
 
 class MILSTD_1553_Message(Struct):
+    """This is a mock specification for a MILSTD 1553 Message to be as
+    simple as possible while still representative of the difficulty of
+    handling specifications.
+
+    """
+    name = "MIL-STD 1553 Mock Message"
+
     fields = [
         UnsignedInteger('bus_id', 8),
         Union([

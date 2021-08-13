@@ -6,6 +6,17 @@ from bitnest.field import Struct, Field, Union, Vector
 
 
 def node_label(struct):
+    """Takes a given Struct and creates a graphviz node label. It uses the
+    table structure that graphviz supports. "ports" are used to create
+    edges that point to the specific row within the struct.
+
+    <table ...>
+      <tr><td>...</td>...</tr>
+      ...
+      <tr><td>...</td>...</tr>
+    </table>
+
+    """
     name = struct.__name__
     header = '<<table border="0" cellborder="1" cellspacing="0">\n'
     title = f'<tr><td port="0" colspan="3"><b>{struct.__name__}</b></td></tr>'
@@ -40,12 +51,14 @@ def visualize(root_class):
 
 
 def _visualize(graph, node, visited_edges):
+    """Breadth first traversal of all structs mentioned from root
+    struct """
     name, label, struct_references = node_label(node)
     for struct in struct_references:
         for field in struct_references[struct]:
             edge = (field, struct.__name__ + ':0')
             if edge not in visited_edges:
                 graph.edge(*edge)
-                edges.add(edge)
-        _visualize(graph, struct, edges)
+                visited_edges.add(edge)
+        _visualize(graph, struct, visited_edges)
     graph.node(name, label)
