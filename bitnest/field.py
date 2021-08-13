@@ -20,13 +20,14 @@ class FieldRef:
             "or": lambda *args: ast.BoolOp(ast.Or(), [args[0], args[1]]),
             "add": lambda *args: ast.BinOp(args[0], ast.Add(), args[1]),
             "sub": lambda *args: ast.BinOp(args[0], ast.Sub(), args[1]),
-            "mul": lambda *args: ast.BinOp(args[0], ast.Mul(), args[1]),
+            "mul": lambda *args: ast.BinOp(args[0], ast.Mult(), args[1]),
+            "div": lambda *args: ast.BinOp(args[0], ast.Div(), args[1]),
             "eq": lambda *args: ast.Compare(args[0], [ast.Eq()], [args[1]]),
             "ne": lambda *args: ast.Compare(args[0], [ast.NotEq()], [args[1]]),
             "lt": lambda *args: ast.Compare(args[0], [ast.Lt()], [args[1]]),
             "gt": lambda *args: ast.Compare(args[0], [ast.Gt()], [args[1]]),
-            "le": lambda *args: ast.Compare(args[0], [ast.Le()], [args[1]]),
-            "ge": lambda *args: ast.Compare(args[0], [ast.Ge()], [args[1]]),
+            "le": lambda *args: ast.Compare(args[0], [ast.LtE()], [args[1]]),
+            "ge": lambda *args: ast.Compare(args[0], [ast.GtE()], [args[1]]),
         }
 
         args = []
@@ -34,7 +35,7 @@ class FieldRef:
             if isinstance(arg, tuple):
                 args.append(FieldRef.python_ast(arg))
             else:
-                if isinstance(arg, (str, int, float, enum.Enum)):
+                if isinstance(arg, (str, int, float, bool, enum.Enum)):
                     args.append(ast.Constant(arg))
         return operation_map[node[0]](*args)
 
@@ -65,6 +66,9 @@ class FieldRef:
 
     def __mul__(self, other):
         return self.lazy_op("mul", self, other)
+
+    def __truediv__(self, other):
+        return self.lazy_op("div", self, other)
 
     def __eq__(self, other):
         return self.lazy_op("eq", self, other)
