@@ -1,10 +1,10 @@
-from bitnest.types import Struct, UnsignedInteger, Bits, Union, FieldRef
+from bitnest.field import Struct, UnsignedInteger, Bits, Union, FieldRef, Vector
 
 
 class CommandWord(Struct):
     fields = [
         UnsignedInteger('remote_terminal_address', 5),
-        UnsighedInteger('number_of_words', 3)
+        UnsignedInteger('number_of_words', 3)
     ]
 
 
@@ -15,7 +15,7 @@ class DataWord(Struct):
 
 
 class RTToController(Struct):
-    __name__ = "Remote Terminal to Controller"
+    name = "Remote Terminal to Controller"
 
     fields = [
         CommandWord,
@@ -27,7 +27,7 @@ class RTToController(Struct):
     ]
 
 class ControllerToRT(Struct):
-    __name__ = "Controller to Remote Terminal"
+    name = "Controller to Remote Terminal"
 
     fields = [
         CommandWord,
