@@ -2,9 +2,10 @@
 https://en.wikipedia.org/wiki/Internet_protocol_suite
 
 """
-from enum import Enum
-
-from bitnest.types import Struct, UnsignedInteger, SignedInteger, Boolean, BitsEnum, Bits, Union
+from bitnest.types import (
+    Struct,
+    Bits,
+)
 
 
 class EthernetFrame(Struct):
@@ -19,12 +20,24 @@ class EthernetFrame(Struct):
     __name__ = "Ethernet Frame"
 
     fields = [
-        Bits('preamble', 7 * 8, help="An Ethernet packet starts with a seven-octet preamble and one-octet start frame delimiter (SFD). The preamble consists of a 56-bit (seven-byte) pattern of alternating 1 and 0 bits, allowing devices on the network to easily synchronize their receiver clocks, providing bit-level synchronization"),
-        Bits('start_frame_delimiter', 8, help="provide byte-level synchronization and to mark a new incoming frame"),
-        Bits('mac_destination', 6 * 8, help="destination mac address"),
-        Bits('mac_source', 6 * 8, help="destination mac address"),
-        Bits('tag_8021Q', 4 * 8, help="a four-octet field that indicates virtual LAN (VLAN) membership and IEEE 802.1p priority."),
-        ...
+        Bits(
+            "preamble",
+            7 * 8,
+            help="An Ethernet packet starts with a seven-octet preamble and one-octet start frame delimiter (SFD). The preamble consists of a 56-bit (seven-byte) pattern of alternating 1 and 0 bits, allowing devices on the network to easily synchronize their receiver clocks, providing bit-level synchronization",
+        ),
+        Bits(
+            "start_frame_delimiter",
+            8,
+            help="provide byte-level synchronization and to mark a new incoming frame",
+        ),
+        Bits("mac_destination", 6 * 8, help="destination mac address"),
+        Bits("mac_source", 6 * 8, help="destination mac address"),
+        Bits(
+            "tag_8021Q",
+            4 * 8,
+            help="a four-octet field that indicates virtual LAN (VLAN) membership and IEEE 802.1p priority.",
+        ),
+        ...,
     ]
 
 
@@ -44,18 +57,18 @@ class IPv4Frame(Struct):
     __name__ = "IPv4 Frame"
 
     fields = [
-        Bits('version', 4, help=""),
-        Bits('ihl', 4, help=""),
-        Bits('dscp', 6, help=""),
-        Bits('ecn', 2, help=""),
-        Bits('total_length', 2 * 8, help=""),
-        Bits('identification', 2 * 8, help=""),
-        Bits('flags', 3, help=""),
-        Bits('fragment_offset', 13, help=""),
-        Bits('time_to_live', 8, help=""),
-        Bits('protocol', 8, help=""),
-        Bits('header checksum', 16, help=""),
-        Bits('source_ip_address', 4 * 8, help=""),
-        Bits('destination_ip_address', 4 * 8, help=""),
-        ...
+        Bits("version", 4, help=""),
+        Bits("ihl", 4, help=""),
+        Bits("dscp", 6, help=""),
+        Bits("ecn", 2, help=""),
+        Bits("total_length", 2 * 8, help=""),
+        Bits("identification", 2 * 8, help=""),
+        Bits("flags", 3, help=""),
+        Bits("fragment_offset", 13, help=""),
+        Bits("time_to_live", 8, help=""),
+        Bits("protocol", 8, help=""),
+        Bits("header checksum", 16, help=""),
+        Bits("source_ip_address", 4 * 8, help=""),
+        Bits("destination_ip_address", 4 * 8, help=""),
+        ...,
     ]

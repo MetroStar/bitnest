@@ -3,14 +3,14 @@ from bitnest.field import Struct, UnsignedInteger, Bits, Union, FieldRef, Vector
 
 class CommandWord(Struct):
     fields = [
-        UnsignedInteger('remote_terminal_address', 5),
-        UnsignedInteger('number_of_words', 3)
+        UnsignedInteger("remote_terminal_address", 5),
+        UnsignedInteger("number_of_words", 3),
     ]
 
 
 class DataWord(Struct):
     fields = [
-        Bits('data', 16),
+        Bits("data", 16),
     ]
 
 
@@ -19,12 +19,11 @@ class RTToController(Struct):
 
     fields = [
         CommandWord,
-        Vector(DataWord, length=FieldRef('CommandWord.number_of_words')),
+        Vector(DataWord, length=FieldRef("CommandWord.number_of_words")),
     ]
 
-    conditions = [
-        (FieldRef('CommandWord.remote_terminal_address') == 0x1f)
-    ]
+    conditions = [(FieldRef("CommandWord.remote_terminal_address") == 0x1F)]
+
 
 class ControllerToRT(Struct):
     name = "Controller to Remote Terminal"
@@ -33,9 +32,8 @@ class ControllerToRT(Struct):
         CommandWord,
     ]
 
-    conditions = [
-        (FieldRef('CommandWord.number_of_words') == 0x0)
-    ]
+    conditions = [(FieldRef("CommandWord.number_of_words") == 0x0)]
+
 
 class MILSTD_1553_Message(Struct):
     """This is a mock specification for a MILSTD 1553 Message to be as
@@ -43,12 +41,15 @@ class MILSTD_1553_Message(Struct):
     handling specifications.
 
     """
+
     name = "MIL-STD 1553 Mock Message"
 
     fields = [
-        UnsignedInteger('bus_id', 8),
-        Union([
-            RTToController,
-            ControllerToRT,
-        ])
+        UnsignedInteger("bus_id", 8),
+        Union(
+            [
+                RTToController,
+                ControllerToRT,
+            ]
+        ),
     ]

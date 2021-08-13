@@ -5,7 +5,16 @@ https://www.irig106.org/docs/106-07/chapter10.pdf
 """
 import enum
 
-from bitnest.field import Struct, UnsignedInteger, SignedInteger, Boolean, BitsEnum, Bits, Union, FieldRef, Vector
+from bitnest.field import (
+    Struct,
+    UnsignedInteger,
+    Boolean,
+    BitsEnum,
+    Bits,
+    Union,
+    FieldRef,
+    Vector,
+)
 
 
 class RecieveTransmitEnum(enum.Enum):
@@ -29,10 +38,23 @@ class CommandWord(Struct):
     name = "Command Word"
 
     fields = [
-        UnsignedInteger('remote_terminal_address', 5, help="remote terminal address. a Terminal address of 31 signifying a broadcast type command"),
-        BitsEnum('recieve_transmit', 1, RecieveTransmitEnum, help="whether the command in a recieve or transmit command"),
-        UnsignedInteger('location_sub_address', 5, help="a sub-address of 0 or 31 signifying a Mode Code type command"),
-        UnsignedInteger('number_of_words', 5),
+        UnsignedInteger(
+            "remote_terminal_address",
+            5,
+            help="remote terminal address. a Terminal address of 31 signifying a broadcast type command",
+        ),
+        BitsEnum(
+            "recieve_transmit",
+            1,
+            RecieveTransmitEnum,
+            help="whether the command in a recieve or transmit command",
+        ),
+        UnsignedInteger(
+            "location_sub_address",
+            5,
+            help="a sub-address of 0 or 31 signifying a Mode Code type command",
+        ),
+        UnsignedInteger("number_of_words", 5),
     ]
 
 
@@ -41,18 +63,20 @@ class ModeCommand(CommandWord):
 
     conditions = [
         # location_sub_address = 0 or 31
-        (FieldRef('location_sub_address') == 0x0) | (FieldRef('location_sub_address') == 0x1f)
+        (FieldRef("location_sub_address") == 0x0)
+        | (FieldRef("location_sub_address") == 0x1F)
     ]
 
 
 class BroadcastModeCommand(CommandWord):
     __name__ = "Broadcast Mode Command"
 
-    conditions =  [
+    conditions = [
         # remote terminal address = 31
-        (FieldRef('remote_terminal_address') == 0x1f),
+        (FieldRef("remote_terminal_address") == 0x1F),
         # location_sub_address = 0 or 31
-        (FieldRef('location_sub_address') == 0x0) | (FieldRef('location_sub_address') == 0x1f)
+        (FieldRef("location_sub_address") == 0x0)
+        | (FieldRef("location_sub_address") == 0x1F),
     ]
 
 
@@ -60,7 +84,7 @@ class TransmitCommand(CommandWord):
     name = "Transmit Command"
 
     conditions = [
-        (FieldRef('recieve_transmit') == RecieveTransmitEnum.TRANSMIT),
+        (FieldRef("recieve_transmit") == RecieveTransmitEnum.TRANSMIT),
     ]
 
 
@@ -68,7 +92,7 @@ class RecieveCommand(CommandWord):
     name = "Recieve Command"
 
     conditions = [
-        (FieldRef('recieve_transmit') == RecieveTransmitEnum.RECIEVE),
+        (FieldRef("recieve_transmit") == RecieveTransmitEnum.RECIEVE),
     ]
 
 
@@ -77,8 +101,8 @@ class BroadcastRecieveCommand(CommandWord):
 
     conditions = [
         # remote terminal address = 31
-        (FieldRef('remote_terminal_address') == 0x1f),
-        (FieldRef('recieve_transmit') == RecieveTransmitEnum.RECIEVE),
+        (FieldRef("remote_terminal_address") == 0x1F),
+        (FieldRef("recieve_transmit") == RecieveTransmitEnum.RECIEVE),
     ]
 
 
@@ -87,8 +111,8 @@ class BroadcastTransmitCommand(CommandWord):
 
     conditions = [
         # remote terminal address = 31
-        (FieldRef('remote_terminal_address') == 0x1f),
-        (FieldRef('recieve_transmit') == RecieveTransmitEnum.TRANSMIT),
+        (FieldRef("remote_terminal_address") == 0x1F),
+        (FieldRef("recieve_transmit") == RecieveTransmitEnum.TRANSMIT),
     ]
 
 
@@ -96,16 +120,16 @@ class StatusWord(Struct):
     name = "Status Word"
 
     fields = [
-        UnsignedInteger('remote_terminal_address', 5),
-        Boolean('message_error'),
-        Boolean('instrumentation'),
-        Boolean('service_request'),
-        Bits('reserved', 3),
-        Boolean('broadcast_command_recieved'),
-        Boolean('busy'),
-        Boolean('subsystem_flag'),
-        Boolean('dynamic_bus_acceptance'),
-        Boolean('terminal_flag'),
+        UnsignedInteger("remote_terminal_address", 5),
+        Boolean("message_error"),
+        Boolean("instrumentation"),
+        Boolean("service_request"),
+        Bits("reserved", 3),
+        Boolean("broadcast_command_recieved"),
+        Boolean("busy"),
+        Boolean("subsystem_flag"),
+        Boolean("dynamic_bus_acceptance"),
+        Boolean("terminal_flag"),
     ]
 
 
@@ -113,7 +137,7 @@ class DataWord(Struct):
     name = "Data Word"
 
     fields = [
-        Bits('data', 16),
+        Bits("data", 16),
     ]
 
 
@@ -126,8 +150,16 @@ class GapTimesWord(Struct):
     name = "Gap Times Word"
 
     fields = [
-        UnsignedInteger('gap_1', 8, help='measures the time between the command or data word and the first (and only) status word in the message'),
-        UnsignedInteger('gap_2', 8, help='For RT-to-RT messages, GAP2 measures the time between the last data word and the second status word'),
+        UnsignedInteger(
+            "gap_1",
+            8,
+            help="measures the time between the command or data word and the first (and only) status word in the message",
+        ),
+        UnsignedInteger(
+            "gap_2",
+            8,
+            help="For RT-to-RT messages, GAP2 measures the time between the last data word and the second status word",
+        ),
     ]
 
 
@@ -135,17 +167,32 @@ class BlockStatusWord(Struct):
     name = "Block Status Word"
 
     fields = [
-        Bits('reserved', 2, help='reserved bits'),
-        BitsEnum('bus_id', 1, BusIdEnum, help='indicates the bus ID for the message'),
-        Boolean('message_error', help='indicates a message error was encountered'),
-        Boolean('rt_to_rt_transfer', help='indicates a RT to RT transfer; message begins with two command words'),
-        Boolean('format_error', help='indicates any illegal gap on the bus other than Response Time Out'),
-        Boolean('response_time_out', help='indicates a response time out occurred.  The bit is set if any of the Status Word(s) belonging to this message didn’t arrive within the response time of 14μs defined by MIL-STD-1553B'),
-        Bits('reserved', 2, help='reserved bits'),
-        Boolean('word_count_error', help='indicates that the number of data words transmitted is different than identified in the command word.  A MIL-STD-1553B Status Word with the busy bit set to true will not cause a Word Count Error.  A transmit command with a response timeout will not cause a Word Count Error'),
-        Boolean('sync_type_error', help='indicates an incorrect sync type occurred'),
-        Boolean('invalid_word_error', help='indicates an invalid word error occurred.  This includes Manchester decoding errors in the synch pattern or word bits, invalid number of bits in the word, or parity error'),
-        Bits('reserved', 2),
+        Bits("reserved", 2, help="reserved bits"),
+        BitsEnum("bus_id", 1, BusIdEnum, help="indicates the bus ID for the message"),
+        Boolean("message_error", help="indicates a message error was encountered"),
+        Boolean(
+            "rt_to_rt_transfer",
+            help="indicates a RT to RT transfer; message begins with two command words",
+        ),
+        Boolean(
+            "format_error",
+            help="indicates any illegal gap on the bus other than Response Time Out",
+        ),
+        Boolean(
+            "response_time_out",
+            help="indicates a response time out occurred.  The bit is set if any of the Status Word(s) belonging to this message didn’t arrive within the response time of 14μs defined by MIL-STD-1553B",
+        ),
+        Bits("reserved", 2, help="reserved bits"),
+        Boolean(
+            "word_count_error",
+            help="indicates that the number of data words transmitted is different than identified in the command word.  A MIL-STD-1553B Status Word with the busy bit set to true will not cause a Word Count Error.  A transmit command with a response timeout will not cause a Word Count Error",
+        ),
+        Boolean("sync_type_error", help="indicates an incorrect sync type occurred"),
+        Boolean(
+            "invalid_word_error",
+            help="indicates an invalid word error occurred.  This includes Manchester decoding errors in the synch pattern or word bits, invalid number of bits in the word, or parity error",
+        ),
+        Bits("reserved", 2),
     ]
 
 
@@ -153,7 +200,11 @@ class LengthWord(Struct):
     name = "Length Word"
 
     fields = [
-        UnsignedInteger('length_word_bits', 16, help='length of the message is the total number of bytes in the message.  A message consists of command words, data words, and status words'),
+        UnsignedInteger(
+            "length_word_bits",
+            16,
+            help="length of the message is the total number of bytes in the message.  A message consists of command words, data words, and status words",
+        ),
     ]
 
 
@@ -172,14 +223,13 @@ class ControllerToRTTransfer(Struct):
 
     fields = [
         RecieveCommand,
-        Vector(DataWord, length=FieldRef('RecieveCommand.number_of_words')),
-        StatusWord
+        Vector(DataWord, length=FieldRef("RecieveCommand.number_of_words")),
+        StatusWord,
     ]
 
     conditions = [
-        (FieldRef('StatusWord.remote_terminal_address') == 0x31),
+        (FieldRef("StatusWord.remote_terminal_address") == 0x31),
     ]
-
 
 
 class RTToControllerTransfer(Struct):
@@ -188,11 +238,11 @@ class RTToControllerTransfer(Struct):
     fields = [
         TransmitCommand,
         StatusWord,
-        Vector(DataWord, length=FieldRef('TransmitCommand.number_of_words'))
+        Vector(DataWord, length=FieldRef("TransmitCommand.number_of_words")),
     ]
 
     conditions = [
-        (FieldRef('TransmitCommmand.remote_terminal_address') == 0x31),
+        (FieldRef("TransmitCommmand.remote_terminal_address") == 0x31),
     ]
 
 
@@ -203,24 +253,21 @@ class RTToRTTransfer(Struct):
         RecieveCommand,
         TransmitCommand,
         StatusWord,
-        Vector(DataWord, length=FieldRef('RecieveCommand.number_of_words')),
+        Vector(DataWord, length=FieldRef("RecieveCommand.number_of_words")),
         StatusWord,
     ]
 
     conditions = [
-        (FieldRef('RecieveCommmand.remote_terminal_address') == 0x31),
+        (FieldRef("RecieveCommmand.remote_terminal_address") == 0x31),
         # TODO: Ambiguous (should refer to second entry)
-        (FieldRef('StatusWord.remote_terminal_address') == 0x31)
+        (FieldRef("StatusWord.remote_terminal_address") == 0x31),
     ]
 
 
 class ModeCommandWithoutData(Struct):
     name = "Mode Command without Data Word"
 
-    fields = [
-        ModeCommand,
-        StatusWord
-    ]
+    fields = [ModeCommand, StatusWord]
 
 
 class ModeCommandWithDataTransmit(Struct):
@@ -246,10 +293,9 @@ class ModeCommandWithDataRecieve(Struct):
 class BroadcastControllerToRTTransfer(Struct):
     name = "Broadcast Controller to Remote Terminal(s) Transfer"
 
-
     fields = [
         BroadcastRecieveCommand,
-        Vector(DataWord, length=FieldRef('BroadcastRecieveCommand.number_of_words'))
+        Vector(DataWord, length=FieldRef("BroadcastRecieveCommand.number_of_words")),
     ]
 
 
@@ -260,16 +306,14 @@ class BroadcastRTToRTTransfer(Struct):
         BroadcastRecieveCommand,
         TransmitCommand,
         StatusWord,
-        Vector(DataWord, length=FieldRef('BroadcastRecieveCommand.number_of_words'))
+        Vector(DataWord, length=FieldRef("BroadcastRecieveCommand.number_of_words")),
     ]
 
 
 class BroadcastModeCommandWithoutData(Struct):
     name = "Broadcast Mode Command Without Data Word"
 
-    fields = [
-        BroadcastModeCommand
-    ]
+    fields = [BroadcastModeCommand]
 
 
 class BroadcastModeCommandWithData(Struct):
@@ -285,20 +329,22 @@ class MILSTD_1553_Intra_Packet_Header(Struct):
     name = "MIL-STD-1553 Intra-Packet Header"
 
     fields = [
-        UnsignedInteger('intra_packet_time_stamp', 8 * 8),
+        UnsignedInteger("intra_packet_time_stamp", 8 * 8),
         MILSTD_1553_Intra_Packet_Data_Header,
-        Union([
-            ControllerToRTTransfer,
-            RTToControllerTransfer,
-            RTToRTTransfer,
-            ModeCommandWithoutData,
-            ModeCommandWithDataTransmit,
-            ModeCommandWithDataRecieve,
-            BroadcastControllerToRTTransfer,
-            BroadcastRTToRTTransfer,
-            BroadcastModeCommandWithoutData,
-            BroadcastModeCommandWithData,
-        ])
+        Union(
+            [
+                ControllerToRTTransfer,
+                RTToControllerTransfer,
+                RTToRTTransfer,
+                ModeCommandWithoutData,
+                ModeCommandWithDataTransmit,
+                ModeCommandWithDataRecieve,
+                BroadcastControllerToRTTransfer,
+                BroadcastRTToRTTransfer,
+                BroadcastModeCommandWithoutData,
+                BroadcastModeCommandWithData,
+            ]
+        ),
     ]
 
 
@@ -316,8 +362,17 @@ class MILSTD_1553_Data_Packet_Format_1(Struct):
     name = "MIL-STD-1553 Bus Data Packets, Format 1"
 
     fields = [
-        BitsEnum('time_tag_bits', 2, TimeTagBitsEnum, help="indicate which bit of the MIL-STD-1553 message the Intra-Packet Header time tags"),
-        Bits('reserved', 6),
-        UnsignedInteger('message_count', 24, help="indicates the binary value of the number of messages included in the packet.  An integral number of complete messages will be in each packe"),
-        Vector(MILSTD_1553_Intra_Packet_Header, length=FieldRef('message_count')),
+        BitsEnum(
+            "time_tag_bits",
+            2,
+            TimeTagBitsEnum,
+            help="indicate which bit of the MIL-STD-1553 message the Intra-Packet Header time tags",
+        ),
+        Bits("reserved", 6),
+        UnsignedInteger(
+            "message_count",
+            24,
+            help="indicates the binary value of the number of messages included in the packet.  An integral number of complete messages will be in each packe",
+        ),
+        Vector(MILSTD_1553_Intra_Packet_Header, length=FieldRef("message_count")),
     ]

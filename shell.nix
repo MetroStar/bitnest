@@ -5,5 +5,7 @@ pkgs.mkShell {
     pythonPackages.graphviz
     # development
     pythonPackages.pytest
+    pythonPackages.black
+    pythonPackages.flake8
   ];
 }
