@@ -5,7 +5,7 @@ Welcome to bitnest's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   architecture
+   design_document
 
 
 Indices and tables
