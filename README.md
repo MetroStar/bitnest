@@ -4,6 +4,16 @@ The core idea of bitnest is "conditional nested structures".
 
 # Documentation
 
+To build the documentation
+
+```shell
+cd docs
+sphinx-build -b html . _build
+```
+
+The documents should also be readable in github via its built in
+markdown renderer.
+
 # Usage
 
 Currently this problem is being approached from the high level user
