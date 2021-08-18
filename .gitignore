@@ -3,4 +3,4 @@
 *.gv.pdf
 
 # sphinx
-docs/build
+docs/_build
