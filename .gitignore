@@ -1,2 +1,6 @@
+# graphviz
 *.gv
 *.gv.pdf
+
+# sphinx
+docs/build

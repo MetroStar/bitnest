@@ -37,3 +37,25 @@ jobs:
       - name: Run tests
         run: |
           pytest
+
+  docs-bitnest:
+    name: 'Test bitnest'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@master
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+      - name: Install Dependencies
+        run: |
+          pip install .[dev]
+      - name: Build documentation
+        run: |
+          cd docs
+          sphinx-build -b html . build
+      - uses: actions/upload-artifact@v2
+        with:
+          name: documentation
+          path: docs

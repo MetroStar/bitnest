@@ -22,7 +22,7 @@ def _realize_datatype(struct):
                         )
                     )
                 union_datatype.append(_datatype)
-            datatype.append(union_datatype)
+            datatype.append(tuple(union_datatype))
         elif isinstance(field, Vector):
             _datatype, _conditions = _realize_datatype(field.klass)
             for _struct, _condition in _conditions:
@@ -45,3 +45,30 @@ def _realize_datatype(struct):
 
 def realize_datatype(root_class):
     return _realize_datatype(root_class)
+
+
+def format_tuple(t):
+    def _format_tuple(t):
+        if isinstance(t, type):
+            return t.__name__
+        elif isinstance(t, tuple):
+            return tuple(_format_tuple(_) for _ in t)
+        else:
+            return t
+
+    return _format_tuple(t)
+
+
+(
+    "MILSTD_1553_Message",
+    "UnsignedInteger",
+    (
+        "Union",
+        (
+            "RTToController",
+            ("CommandWord", "UnsignedInteger", "UnsignedInteger"),
+            ("Vector", "DataWord", ("DataWord", "Bits")),
+        ),
+        ("ControllerToRT", ("CommandWord", "UnsignedInteger", "UnsignedInteger")),
+    ),
+)

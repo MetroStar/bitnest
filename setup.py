@@ -34,6 +34,9 @@ setup(
             "pytest",
             "black==21.5b0",
             "flake8",
+            "sphinx",
+            "sphinx_rtd_theme",
+            "recommonmark",
         ],
     },
     project_urls={
