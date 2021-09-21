@@ -89,4 +89,34 @@ Since a `Vector` is a single path `(Vector (Struct ...))` this element
 does not affect the number of paths. Thus `(Vector (n paths))` results
 in `n` paths. Fields behave very much the same way except for the fact
 that `Field` are leaf nodes to the tree and thus always result in a
-single path.
+single path. There is a visualize table method that will help to
+render the html resulting two structs and their tabular
+representation.
+
+<table>
+ <tr>
+    <td colspan="2">StructA</td>
+  </tr>
+  <tr>
+    <td></td>
+    <td colspan="1">StructB</td>
+  </tr>
+  <tr>
+    <td>FieldA</td>
+    <td>FieldB</td>
+  </tr>
+</table>
+
+<table>
+ <tr>
+    <td colspan="2">StructA</td>
+  </tr>
+  <tr>
+    <td></td>
+    <td colspan="1">StructC</td>
+  </tr>
+  <tr>
+    <td>FieldA</td>
+    <td>FieldC</td>
+  </tr>
+</table>
