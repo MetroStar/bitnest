@@ -15,7 +15,7 @@ def _realize_datatype(struct):
             datatype.append(tuple(union_datatype))
         elif isinstance(field, Vector):
             _datatype = _realize_datatype(field.klass)
-            datatype.append((field.__class__, field.klass, _datatype))
+            datatype.append((field.__class__, _datatype))
         elif isinstance(field, Field):
             datatype.append(field)
         elif issubclass(field, Struct):
@@ -25,6 +25,15 @@ def _realize_datatype(struct):
 
 
 def realize_datatype(root_class):
+    """Take a given Model and realize the entire nested datastructure
+
+    This form includes `Union` to not have to compute all the possible
+    structures that can result from the given datatype.
+
+    For example consider. `(StructA (Union (StructB FieldC) (StructD
+    FieldE)))`.
+
+    """
     return _realize_datatype(root_class)
 
 
@@ -33,9 +42,9 @@ def _realize_datatype_paths(datatype):
         if issubclass(datatype[0], Vector):
             # (Vector, Struct, ...) -> (Vector, paths(Struct, ...))
             field_paths = []
-            _field_paths = _realize_datatype_paths(datatype[1:])
+            _field_paths = _realize_datatype_paths(datatype[1])
             for field_path in _field_paths:
-                field_paths.append([datatype[0], *field_path])
+                field_paths.append((datatype[0], field_path))
             return field_paths
         elif issubclass(datatype[0], Union):
             # (Union, (Field, (Struct, ...), ...)) -> paths(Field) + paths(Union, ...) + ... + paths(...)
@@ -49,10 +58,14 @@ def _realize_datatype_paths(datatype):
             field_paths = []
             for element in datatype[1:]:
                 field_paths.append(_realize_datatype_paths(element))
-            return tuple(itertools.product(*field_paths))
+
+            _paths = []
+            for path in itertools.product(*field_paths):
+                _paths.append((datatype[0], path))
+            return _paths
     elif isinstance(datatype, Field):
         # Field -> ((Field))
-        return ((datatype,))
+        return (datatype,)
 
 
 def realize_datatype_paths(datatype):

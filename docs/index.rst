@@ -5,6 +5,7 @@ Welcome to bitnest's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   contributing
    design_document
 
 
