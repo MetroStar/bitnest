@@ -1,19 +1,74 @@
+import itertools
+
 from bitnest.field import Struct, Field, Union, Vector
 
 
 def _realize_datatype(struct):
-    datatype, conditions = [
-        struct,
-    ], []
+    datatype = [struct]
+
+    for field in struct.fields:
+        if isinstance(field, Union):
+            union_datatype = [field.__class__]
+            for union_struct in field.structs:
+                _datatype = _realize_datatype(union_struct)
+                union_datatype.append(_datatype)
+            datatype.append(tuple(union_datatype))
+        elif isinstance(field, Vector):
+            _datatype = _realize_datatype(field.klass)
+            datatype.append((field.__class__, field.klass, _datatype))
+        elif isinstance(field, Field):
+            datatype.append(field)
+        elif issubclass(field, Struct):
+            _datatype = _realize_datatype(field)
+            datatype.append(_datatype)
+    return tuple(datatype)
+
+
+def realize_datatype(root_class):
+    return _realize_datatype(root_class)
+
+
+def _realize_datatype_paths(datatype):
+    if isinstance(datatype, tuple):
+        if issubclass(datatype[0], Vector):
+            # (Vector, Struct, ...) -> (Vector, paths(Struct, ...))
+            field_paths = []
+            _field_paths = _realize_datatype_paths(datatype[1:])
+            for field_path in _field_paths:
+                field_paths.append([datatype[0], *field_path])
+            return field_paths
+        elif issubclass(datatype[0], Union):
+            # (Union, (Field, (Struct, ...), ...)) -> paths(Field) + paths(Union, ...) + ... + paths(...)
+            union_paths = []
+            for union_struct in datatype[1:]:
+                for union_path in _realize_datatype_paths(union_struct):
+                    union_paths.append(union_path)
+            return union_paths
+        elif issubclass(datatype[0], Struct):
+            # (Struct, ...) -> product(paths(0), ..., paths(N))
+            field_paths = []
+            for element in datatype[1:]:
+                field_paths.append(_realize_datatype_paths(element))
+            return tuple(itertools.product(*field_paths))
+    elif isinstance(datatype, Field):
+        # Field -> ((Field))
+        return ((datatype,))
+
+
+def realize_datatype_paths(datatype):
+    return _realize_datatype_paths(datatype)
+
+
+def _realize_conditions(struct):
+    conditions = []
 
     for _condition in struct.conditions:
         conditions.append((struct, _condition))
 
     for field in struct.fields:
         if isinstance(field, Union):
-            union_datatype = [field.__class__]
             for union_struct in field.structs:
-                _datatype, _conditions = _realize_datatype(union_struct)
+                _conditions = _realize_conditions(union_struct)
                 for _struct, _condition in _conditions:
                     conditions.append(
                         (
@@ -21,10 +76,8 @@ def _realize_datatype(struct):
                             (field.__class__, union_struct, _condition),
                         )
                     )
-                union_datatype.append(_datatype)
-            datatype.append(tuple(union_datatype))
         elif isinstance(field, Vector):
-            _datatype, _conditions = _realize_datatype(field.klass)
+            _conditions = _realize_conditions(field.klass)
             for _struct, _condition in _conditions:
                 conditions.append(
                     (
@@ -32,19 +85,18 @@ def _realize_datatype(struct):
                         (field.__class__, field.klass, _condition),
                     )
                 )
-            datatype.append((field.__class__, field.klass, _datatype))
         elif isinstance(field, Field):
-            datatype.append(field.__class__)
+            pass
         elif issubclass(field, Struct):
-            _datatype, _conditions = _realize_datatype(field)
+            _conditions = _realize_conditions(field)
             for _struct, _condition in _conditions:
                 conditions.append(((struct, _struct), (struct, _condition)))
-            datatype.append(_datatype)
-    return tuple(datatype), conditions
+
+    return conditions
 
 
-def realize_datatype(root_class):
-    return _realize_datatype(root_class)
+def realize_conditions(root_class):
+    return _realize_conditions(root_class)
 
 
 def format_tuple(t):
@@ -57,18 +109,3 @@ def format_tuple(t):
             return t
 
     return _format_tuple(t)
-
-
-(
-    "MILSTD_1553_Message",
-    "UnsignedInteger",
-    (
-        "Union",
-        (
-            "RTToController",
-            ("CommandWord", "UnsignedInteger", "UnsignedInteger"),
-            ("Vector", "DataWord", ("DataWord", "Bits")),
-        ),
-        ("ControllerToRT", ("CommandWord", "UnsignedInteger", "UnsignedInteger")),
-    ),
-)

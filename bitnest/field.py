@@ -7,6 +7,9 @@ class FieldRef:
         self.name = name
         self.operations = ("ref", name)
 
+    def __repr__(self):
+        return f'<Field expr="{self.__str__()}">'
+
     def __str__(self):
         expr = self.python_ast(self.operations)
         return ast.unparse(expr)
