@@ -24,17 +24,8 @@ def _realize_datatype(struct):
     return tuple(datatype)
 
 
-def realize_datatype(root_class):
-    """Take a given Model and realize the entire nested datastructure
-
-    This form includes `Union` to not have to compute all the possible
-    structures that can result from the given datatype.
-
-    For example consider. `(StructA (Union (StructB FieldC) (StructD
-    FieldE)))`.
-
-    """
-    return _realize_datatype(root_class)
+def realize_datatype(struct):
+    return _realize_datatype(struct)
 
 
 def _realize_datatype_paths(datatype):
@@ -61,7 +52,7 @@ def _realize_datatype_paths(datatype):
 
             _paths = []
             for path in itertools.product(*field_paths):
-                _paths.append((datatype[0], path))
+                _paths.append((datatype[0], *path))
             return _paths
     elif isinstance(datatype, Field):
         # Field -> ((Field))
@@ -70,6 +61,27 @@ def _realize_datatype_paths(datatype):
 
 def realize_datatype_paths(datatype):
     return _realize_datatype_paths(datatype)
+
+
+def _get_path_fields(path, fields, structs, depth=0):
+    start = len(fields)
+    if isinstance(path, Field):
+        fields.append(path)
+    elif isinstance(path, tuple):
+        if issubclass(path[0], Struct):
+            for element in path[1:]:
+                _get_path_fields(element, fields, structs, depth=depth+1)
+            structs[(depth, start, len(fields))] = path[0]
+        elif issubclass(path[0], Vector):
+            _get_path_fields(path[1], fields, structs, depth=depth+1)
+            structs[(depth, start, len(fields))] = path[0]
+
+
+def get_path_fields(path):
+    fields = []
+    structs = {}
+    _get_path_fields(path, fields, structs)
+    return fields, structs
 
 
 def _realize_conditions(struct):

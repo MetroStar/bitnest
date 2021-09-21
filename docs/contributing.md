@@ -60,7 +60,9 @@ structs = [
 ]
 ```
 
-This can be reduced further by removing the Struct definitions.
+This can be reduced further by removing the Struct definitions along
+with the exact mappings of all of the structs. Done via the
+`get_path_fields(structs[0])` command.
 
 ```python
 structs = [
