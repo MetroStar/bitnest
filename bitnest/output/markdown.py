@@ -1,6 +1,7 @@
 import textwrap
 
 from bitnest.field import Union, Vector, Field, Struct
+from bitnest.core import realize_datatype, realize_datatype_paths, get_path_fields
 
 
 def markdown_table(header, rows):
@@ -28,6 +29,50 @@ def markdown_table(header, rows):
         + line_format
         + "".join(row_format.format(*row) for row in rows)
     )
+
+
+def path_table_html(path):
+    fields, structs = get_path_fields(path)
+    num_columns = len(fields)
+
+    current_row, current_column = 0, 0
+    rows = []
+    row_string = ""
+
+    for position in sorted(structs):
+        depth, start, end = position
+        if depth == current_row:
+            pass
+        elif current_column == num_columns:
+            rows.append(row_string)
+            row_string = ""
+            current_row = depth
+            current_column = 0
+        else:
+            row_string += f'<td colspan="{num_columns - current_column}"></td>'
+            rows.append(row_string)
+            row_string = ""
+            current_row = depth
+            current_column = 0
+
+        if start > current_column:
+            row_string += f'<td colspan="{start - current_column}"></td>'
+            current_column = start
+
+        row_string += f'<td colspan="{end - start}">{structs[position].name}</td>'
+        current_column = end
+    rows.append(row_string)
+    row_string = ""
+
+    for field in fields:
+        row_string += f'<td>{field.name} {field.nbits}</td>'
+    rows.append(row_string)
+
+    table_html = "<table>"
+    for row in rows:
+        table_html += f"<tr>{row}</tr>"
+    table_html += "</table>"
+    return table_html
 
 
 def markdown_section_link(section):
@@ -139,4 +184,20 @@ def _markdown(struct, visited_structs):
 
 
 def markdown(root_class):
-    return _markdown(root_class, {root_class})
+    text = _markdown(root_class, {root_class})
+
+    realized_section = textwrap.dedent(
+        """
+        # Realized Structures
+
+        {realized_structures}
+        """
+    )
+
+    datatype = realize_datatype(root_class)
+    datatype_paths = realize_datatype_paths(datatype)
+    html_tables = []
+    for path in datatype_paths:
+        html_tables.append(path_table_html(path))
+    text += realized_section.format(realized_structures='\n'.join(html_tables))
+    return text
