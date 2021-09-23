@@ -2,6 +2,8 @@ from bitnest.field import Struct, UnsignedInteger, Bits, Union, FieldRef, Vector
 
 
 class CommandWord(Struct):
+    name = "CommandWord"
+
     fields = [
         UnsignedInteger("remote_terminal_address", 5),
         UnsignedInteger("number_of_words", 3),
@@ -9,6 +11,8 @@ class CommandWord(Struct):
 
 
 class DataWord(Struct):
+    name = "DataWord"
+
     fields = [
         Bits("data", 16),
     ]

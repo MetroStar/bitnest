@@ -130,6 +130,8 @@ class Union(Field):
 
 
 class Vector:
+    name = "Vector"
+
     def __init__(self, klass, length):
         self.klass = klass
         self.length = length
