@@ -2,6 +2,8 @@ import ast
 import enum
 import itertools
 
+import astor
+
 
 class Symbol:
     def __init__(self, name):
@@ -28,17 +30,19 @@ class Symbol:
 
 
 def quote(value):
-    return (Symbol('quote'), value)
+    return (Symbol("quote"), value)
 
 
 DEFAULT_SYMBOL_MAPPING = {
     Symbol("not"): lambda *args: ast.UnaryOp(ast.Not(), args[0]),
     Symbol("and"): lambda *args: ast.BoolOp(ast.And(), [args[0], args[1]]),
     Symbol("or"): lambda *args: ast.BoolOp(ast.Or(), [args[0], args[1]]),
+    Symbol("mod"): lambda *args: ast.BinOp(args[0], ast.Mod(), args[1]),
     Symbol("add"): lambda *args: ast.BinOp(args[0], ast.Add(), args[1]),
     Symbol("sub"): lambda *args: ast.BinOp(args[0], ast.Sub(), args[1]),
     Symbol("mul"): lambda *args: ast.BinOp(args[0], ast.Mult(), args[1]),
-    Symbol("div"): lambda *args: ast.BinOp(args[0], ast.Div(), args[1]),
+    Symbol("floordiv"): lambda *args: ast.BinOp(args[0], ast.FloorDiv(), args[1]),
+    Symbol("truediv"): lambda *args: ast.BinOp(args[0], ast.Div(), args[1]),
     Symbol("eq"): lambda *args: ast.Compare(args[0], [ast.Eq()], [args[1]]),
     Symbol("ne"): lambda *args: ast.Compare(args[0], [ast.NotEq()], [args[1]]),
     Symbol("lt"): lambda *args: ast.Compare(args[0], [ast.Lt()], [args[1]]),
@@ -49,18 +53,47 @@ DEFAULT_SYMBOL_MAPPING = {
 }
 
 
-def backend_python_ast(expression, symbol_mapping=DEFAULT_SYMBOL_MAPPING):
-    if isinstance(expression, Expression):
-        expression = self.expression
-
+def backend_python_ast(node, symbol_mapping=DEFAULT_SYMBOL_MAPPING):
     args = []
-    for arg in expression[1:]:
+    for arg in node[1:]:
         if isinstance(arg, tuple):
             args.append(backend_python_ast(arg, symbol_mapping))
         else:
             if isinstance(arg, (str, int, float, bool, enum.Enum)):
                 args.append(ast.Constant(arg))
-    return symbol_mapping[expression[0]](*args)
+    return symbol_mapping[node[0]](*args)
+
+
+def replace_nodes_post_order(node, replacement_mapping):
+    """Post order (left, ..., right, self) replacement of nodes"""
+    if node[0] == Symbol("quote"):
+        return node
+
+    args = []
+    for arg in node[1:]:
+        if isinstance(arg, tuple):
+            arg = replace_nodes_post_order(arg, replacement_mapping)
+        args.append(arg)
+
+    if node[0] in replacement_mapping:
+        node = replacement_mapping[node[0]](node[0], args)
+    return node
+
+
+def replace_nodes_pre_order(node, replacement_mapping):
+    """Pre order (self, left, ..., right) replacement of nodes"""
+    if node[0] == Symbol("quote"):
+        return node
+
+    if node[0] in replacement_mapping:
+        node = replacement_mapping[node[0]](node[0], node[1:])
+
+    args = []
+    for arg in node[1:]:
+        if isinstance(arg, tuple):
+            arg = replace_nodes_pre_order(arg, replacement_mapping)
+        args.append(arg)
+    return (node[0], *args)
 
 
 class Expression:
@@ -71,7 +104,7 @@ class Expression:
         return str(self.expression)
 
     def __repr__(self):
-        return f'<Expression {self.__str__()}>'
+        return f"<Expression {self.__str__()}>"
 
     def _lazy_op(self, op, *args):
         arguments = []
@@ -86,15 +119,34 @@ class Expression:
     def to_python_ast(self, symbol_mapping=DEFAULT_SYMBOL_MAPPING):
         return backend_python_ast(self.expression, symbol_mapping)
 
+    def to_python_source(self, symbol_mapping=DEFAULT_SYMBOL_MAPPING):
+        expression_ast = self.to_python_ast(symbol_mapping=symbol_mapping)
+        return astor.to_source(expression_ast)
+
+    def replace(self, replacement_mapping, order="post_order"):
+        if order == "post_order":
+            self.expression = replace_nodes_post_order(
+                self.expression, replacement_mapping
+            )
+        elif order == "pre_order":
+            self.expression = replace_nodes_pre_order(
+                self.expression, replacement_mapping
+            )
+        else:
+            raise ValueError("replacement ordering={order} not supported")
+
+    def eval(self, symbol_mapping=DEFAULT_SYMBOL_MAPPING, context=None):
+        return eval(self.to_python_source(symbol_mapping), context)
+
     # for list of special python methods to overload (not all are needed)
     # https://docs.python.org/3/reference/datamodel.html#special-method-names
-    def __not__(self):
+    def __invert__(self):  # logical not
         return self._lazy_op(Symbol("not"), self)
 
-    def __and__(self, other):
+    def __and__(self, other):  # logical and
         return self._lazy_op(Symbol("and"), self, other)
 
-    def __or__(self, other):
+    def __or__(self, other):  # logical or
         return self._lazy_op(Symbol("or"), self, other)
 
     def __add__(self, other):
@@ -125,13 +177,13 @@ class Expression:
         return self._lazy_op(Symbol("lt"), self, other)
 
     def __gt__(self, other):
-        return self._lazy_op(Symbol("gt"), self.operations, other)
+        return self._lazy_op(Symbol("gt"), self, other)
 
     def __le__(self, other):
-        return self._lazy_op(Symbol("le"), self.operations, other)
+        return self._lazy_op(Symbol("le"), self, other)
 
     def __ge__(self, other):
-        return self._lazy_op(Symbol("ge"), self.operations, other)
+        return self._lazy_op(Symbol("ge"), self, other)
 
 
 class Variable(Expression):
@@ -140,9 +192,11 @@ class Variable(Expression):
 
 
 class UniqueVariable(Expression):
-    symbol_prefix = '__'
+    symbol_prefix = "__"
 
     counter = itertools.count()
 
     def __init__(self):
-        super().__init__((Symbol("variable"), f"{self.symbol_prefix}{next(self.counter)}"))
+        super().__init__(
+            (Symbol("variable"), f"{self.symbol_prefix}{next(self.counter)}")
+        )

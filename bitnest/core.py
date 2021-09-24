@@ -1,6 +1,6 @@
 import itertools
 
-from bitnest.field import Struct, Field, Union, Vector
+from bitnest.ast.field import Struct, Field, Union, Vector
 
 
 def _realize_datatype(struct):
@@ -70,10 +70,10 @@ def _get_path_fields(path, fields, structs, depth=0):
     elif isinstance(path, tuple):
         if issubclass(path[0], Struct):
             for element in path[1:]:
-                _get_path_fields(element, fields, structs, depth=depth+1)
+                _get_path_fields(element, fields, structs, depth=depth + 1)
             structs[(depth, start, len(fields))] = path[0]
         elif issubclass(path[0], Vector):
-            _get_path_fields(path[1], fields, structs, depth=depth+1)
+            _get_path_fields(path[1], fields, structs, depth=depth + 1)
             structs[(depth, start, len(fields))] = path[0]
 
 

@@ -1,8 +1,4 @@
-import ast
-import enum
-
-
-from bitnest.lisp import Symbol, Variable, UniqueVariable, Expression
+from bitnest.ast.core import Symbol, Expression
 
 
 def FieldReference(field_name: str):
@@ -10,7 +6,7 @@ def FieldReference(field_name: str):
 
 
 def Field(name, size, field_type, offset=None, **additional):
-    return ((Symbol(f"field::{field_type}"), name, offset, size, additional))
+    return (Symbol("field"), field_type, name, offset, size, additional)
 
 
 def UnsignedInteger(name, size, **kwargs):
@@ -30,8 +26,8 @@ def Bits(name, size, **kwargs):
 
 
 def BitsEnum(name, size, mapping, **kwargs):
-    kwargs['mapping'] = mapping
-    return Field(name=name, size=size, **kwargs)
+    kwargs["mapping"] = mapping
+    return Field(name=name, size=size, field_type="bits_enum", **kwargs)
 
 
 class Struct:
@@ -45,12 +41,12 @@ class Struct:
 
     @classmethod
     def expression(cls):
-        return ('struct', cls.name, cls.fields, cls.conditions)
+        return ("struct", cls.name, cls.fields, cls.conditions)
 
 
-def Union(structs):
-    return (Symbol('union'), *tuple(s.expression() for s in structs))
+def Union(*structs):
+    return (Symbol("union"), *tuple(s.expression() for s in structs))
 
 
 def Vector(struct, length):
-    return ((Symbol('vector'), length, struct.expression()))
+    return (Symbol("vector"), struct.expression(), length)

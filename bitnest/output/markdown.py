@@ -71,7 +71,7 @@ def path_table_html(path):
     row_string = ""
 
     for field in fields:
-        row_string += f'<td>{field.name} {field.nbits}</td>'
+        row_string += f"<td>{field.name} {field.nbits}</td>"
     rows.append(row_string)
 
     table_html = "<table>"
@@ -194,13 +194,15 @@ def markdown(root_class, visualize=True, realize=True):
 
     if visualize:
         graph = bitnest.output.visualize.visualize(root_class)
-        image = base64.b64encode(graph.pipe(format='png'))
-        text += textwrap.dedent(f'''
+        image = base64.b64encode(graph.pipe(format="png"))
+        text += textwrap.dedent(
+            f"""
         # Visualize
 
         ![image](data:image/png;base64,{image.decode("utf-8")})
 
-        ''')
+        """
+        )
 
     text += render_struct_descriptions(root_class, {root_class})
 
@@ -210,7 +212,7 @@ def markdown(root_class, visualize=True, realize=True):
         html_tables = []
         for path in datatype_paths:
             html_tables.append(path_table_html(path))
-        html_tables_text = '\n\n'.join(html_tables)
+        html_tables_text = "\n\n".join(html_tables)
 
         text += textwrap.dedent(
             """
