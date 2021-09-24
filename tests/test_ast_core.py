@@ -139,3 +139,15 @@ def test_post_order_replacement():
     # (test_a / 1) / 2
     # (truediv (<here>mul (variable test_a) 1) 2)
     assert expression.eval(context={"test_a": test_a}) == ((test_a / 1) / 2)
+
+
+def test_find_nodes():
+    expression = (Variable("test_a") + 1) * 20 + Variable("test_b")
+
+    def match_function(symbol, args):
+        return symbol == Symbol('variable')
+
+    assert expression.find(match_function) == [
+        (Symbol('variable'), 'test_a'),
+        (Symbol('variable'), 'test_b'),
+    ]

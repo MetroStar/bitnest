@@ -64,7 +64,7 @@ def backend_python_ast(node, symbol_mapping=DEFAULT_SYMBOL_MAPPING):
     return symbol_mapping[node[0]](*args)
 
 
-def replace_nodes_post_order(node, replacement_mapping):
+def replace_nodes_post_order(node, replacement_function):
     """Post order (left, ..., right, self) replacement of nodes"""
     if node[0] == Symbol("quote"):
         return node
@@ -72,26 +72,23 @@ def replace_nodes_post_order(node, replacement_mapping):
     args = []
     for arg in node[1:]:
         if isinstance(arg, tuple):
-            arg = replace_nodes_post_order(arg, replacement_mapping)
+            arg = replace_nodes_post_order(arg, replacement_function)
         args.append(arg)
 
-    if node[0] in replacement_mapping:
-        node = replacement_mapping[node[0]](node[0], args)
-    return node
+    return replacement_function(node[0], node[1:])
 
 
-def replace_nodes_pre_order(node, replacement_mapping):
+def replace_nodes_pre_order(node, replacement_function):
     """Pre order (self, left, ..., right) replacement of nodes"""
     if node[0] == Symbol("quote"):
         return node
 
-    if node[0] in replacement_mapping:
-        node = replacement_mapping[node[0]](node[0], node[1:])
+    node = replacement_function(node[0], node[1:])
 
     args = []
     for arg in node[1:]:
         if isinstance(arg, tuple):
-            arg = replace_nodes_pre_order(arg, replacement_mapping)
+            arg = replace_nodes_pre_order(arg, replacement_function)
         args.append(arg)
     return (node[0], *args)
 
@@ -124,19 +121,38 @@ class Expression:
         return astor.to_source(expression_ast)
 
     def replace(self, replacement_mapping, order="post_order"):
+        def replacement_function(symbol, args):
+            if symbol == Symbol("quote"):
+                return (symbol, *args)
+
+            if symbol in replacement_mapping:
+                return replacement_mapping[symbol](symbol, args)
+            return (symbol, *args)
+
         if order == "post_order":
             self.expression = replace_nodes_post_order(
-                self.expression, replacement_mapping
+                self.expression, replacement_function
             )
         elif order == "pre_order":
             self.expression = replace_nodes_pre_order(
-                self.expression, replacement_mapping
+                self.expression, replacement_function
             )
         else:
             raise ValueError("replacement ordering={order} not supported")
 
     def eval(self, symbol_mapping=DEFAULT_SYMBOL_MAPPING, context=None):
         return eval(self.to_python_source(symbol_mapping), context)
+
+    def find(self, match_function):
+        nodes = []
+
+        def find_function(symbol, args):
+            if match_function(symbol, args):
+                nodes.append((symbol, *args))
+            return (symbol, *args)
+
+        replace_nodes_post_order(self.expression, find_function)
+        return nodes
 
     # for list of special python methods to overload (not all are needed)
     # https://docs.python.org/3/reference/datamodel.html#special-method-names
