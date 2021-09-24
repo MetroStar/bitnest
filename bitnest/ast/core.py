@@ -33,6 +33,10 @@ def quote(value):
     return (Symbol("quote"), value)
 
 
+def list_(*values):
+    return (Symbol("list"), *values)
+
+
 DEFAULT_SYMBOL_MAPPING = {
     Symbol("not"): lambda *args: ast.UnaryOp(ast.Not(), args[0]),
     Symbol("and"): lambda *args: ast.BoolOp(ast.And(), [args[0], args[1]]),
@@ -143,7 +147,7 @@ class Expression:
     def eval(self, symbol_mapping=DEFAULT_SYMBOL_MAPPING, context=None):
         return eval(self.to_python_source(symbol_mapping), context)
 
-    def find(self, match_function):
+    def find(self, match_function, order="post_order"):
         nodes = []
 
         def find_function(symbol, args):
@@ -151,8 +155,20 @@ class Expression:
                 nodes.append((symbol, *args))
             return (symbol, *args)
 
-        replace_nodes_post_order(self.expression, find_function)
+        if order == "post_order":
+            replace_nodes_post_order(self.expression, find_function)
+        elif order == "pre_order":
+            replace_nodes_pre_order(self.expression, find_function)
+        else:
+            raise ValueError("replacement ordering={order} not supported")
+
         return nodes
+
+    def find_symbol(self, symbol: Symbol, order="post_order"):
+        def match_function(_symbol, args):
+            return symbol == _symbol
+
+        return self.find(match_function, order=order)
 
     # for list of special python methods to overload (not all are needed)
     # https://docs.python.org/3/reference/datamodel.html#special-method-names

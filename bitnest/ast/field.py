@@ -1,4 +1,4 @@
-from bitnest.ast.core import Symbol, Expression
+from bitnest.ast.core import Symbol, Expression, list_
 
 
 def FieldReference(field_name: str):
@@ -41,7 +41,27 @@ class Struct:
 
     @classmethod
     def expression(cls):
-        return ("struct", cls.name, cls.fields, cls.conditions)
+        fields = []
+        for field in cls.fields:
+            if isinstance(field, type) and issubclass(field, Struct):
+                fields.append(field.expression())
+            else:
+                fields.append(field)
+
+        conditions = []
+        for condition in cls.conditions:
+            if isinstance(condition, Expression):
+                conditions.append(condition.expression)
+            else:
+                conditions.append(condition)
+
+        return (
+            Symbol("struct"),
+            cls.name,
+            list_(*fields),
+            list_(*cls.conditions),
+            {"help": cls.__doc__ or ""},
+        )
 
 
 def Union(*structs):

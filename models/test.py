@@ -1,11 +1,11 @@
-from bitnest.field import Struct, Bits, Union, UnsignedInteger, SignedInteger
+from bitnest.ast.field import Struct, Bits, Union, UnsignedInteger, SignedInteger
 
 
 class StructD(Struct):
     """All about StructD description"""
 
     name = "StructD"
-    fields = [UnsignedInteger(name="FieldD", nbits=7, help="info about FieldD")]
+    fields = [UnsignedInteger(name="FieldD", size=7, help="info about FieldD")]
 
 
 class StructC(Struct):
@@ -14,7 +14,7 @@ class StructC(Struct):
     name = "StructC"
     fields = [
         StructD,
-        Bits(name="FieldC", nbits=4, help="info about FieldC"),
+        Bits(name="FieldC", size=4, help="info about FieldC"),
     ]
 
 
@@ -22,7 +22,7 @@ class StructB(Struct):
     """All about StructB description"""
 
     name = "StructB"
-    fields = [SignedInteger(name="FieldB", nbits=8, help="info about FieldB")]
+    fields = [SignedInteger(name="FieldB", size=8, help="info about FieldB")]
 
 
 class StructA(Struct):
@@ -30,8 +30,8 @@ class StructA(Struct):
 
     name = "StructA"
     fields = [
-        Bits(name="FieldA", nbits=4, help="info about FieldA"),
-        Union([StructB, StructC]),
-        Union([StructB, StructC]),
-        Union([StructB, StructC]),
+        Bits(name="FieldA", size=4, help="info about FieldA"),
+        Union(StructB, StructC),
+        Union(StructB, StructC),
+        Union(StructB, StructC),
     ]
