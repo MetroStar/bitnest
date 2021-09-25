@@ -2,6 +2,7 @@ import textwrap
 import base64
 
 from bitnest.ast.core import Symbol, Expression
+import bitnest.output.visualize
 
 
 def markdown_table(header, rows):
@@ -153,17 +154,17 @@ def markdown_struct(struct_node):
 def markdown(root_class, visualize=True, realize=True):
     text = ""
 
-    # if visualize:
-    #     graph = bitnest.output.visualize.visualize(root_class)
-    #     image = base64.b64encode(graph.pipe(format="png"))
-    #     text += textwrap.dedent(
-    #         f"""
-    #     # Visualize
+    if visualize:
+        graph = bitnest.output.visualize.visualize(root_class)
+        image = base64.b64encode(graph.pipe(format="png"))
+        text += textwrap.dedent(
+            f"""
+        # Visualize
 
-    #     ![image](data:image/png;base64,{image.decode("utf-8")})
+        ![image](data:image/png;base64,{image.decode("utf-8")})
 
-    #     """
-    #     )
+        """
+        )
 
     visited_structs = set()
     for struct in Expression(root_class.expression()).find_symbol(
