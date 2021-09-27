@@ -79,7 +79,7 @@ def replace_nodes_post_order(node, replacement_function):
             arg = replace_nodes_post_order(arg, replacement_function)
         args.append(arg)
 
-    return replacement_function(node[0], node[1:])
+    return replacement_function(node[0], args)
 
 
 def replace_nodes_pre_order(node, replacement_function):

@@ -5,7 +5,9 @@ class StructD(Struct):
     """All about StructD description"""
 
     name = "StructD"
-    fields = [UnsignedInteger(name="FieldD", size=7, help="info about FieldD")]
+    fields = [
+        UnsignedInteger(name="FieldD", size=7, help="info about FieldD")
+    ]
 
 
 class StructC(Struct):
@@ -22,7 +24,9 @@ class StructB(Struct):
     """All about StructB description"""
 
     name = "StructB"
-    fields = [SignedInteger(name="FieldB", size=8, help="info about FieldB")]
+    fields = [
+        SignedInteger(name="FieldB", size=8, help="info about FieldB")
+    ]
 
 
 class StructA(Struct):
