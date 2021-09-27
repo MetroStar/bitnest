@@ -5,14 +5,14 @@ https://www.irig106.org/docs/106-07/chapter10.pdf
 """
 import enum
 
-from bitnest.field import (
+from bitnest.ast.field import (
     Struct,
     UnsignedInteger,
     Boolean,
     BitsEnum,
     Bits,
     Union,
-    FieldRef,
+    FieldReference,
     Vector,
 )
 
@@ -63,8 +63,8 @@ class ModeCommand(CommandWord):
 
     conditions = [
         # location_sub_address = 0 or 31
-        (FieldRef("location_sub_address") == 0x0)
-        | (FieldRef("location_sub_address") == 0x1F)
+        (FieldReference("location_sub_address") == 0x0)
+        | (FieldReference("location_sub_address") == 0x1F)
     ]
 
 
@@ -73,10 +73,10 @@ class BroadcastModeCommand(CommandWord):
 
     conditions = [
         # remote terminal address = 31
-        (FieldRef("remote_terminal_address") == 0x1F),
+        (FieldReference("remote_terminal_address") == 0x1F),
         # location_sub_address = 0 or 31
-        (FieldRef("location_sub_address") == 0x0)
-        | (FieldRef("location_sub_address") == 0x1F),
+        (FieldReference("location_sub_address") == 0x0)
+        | (FieldReference("location_sub_address") == 0x1F),
     ]
 
 
@@ -84,7 +84,7 @@ class TransmitCommand(CommandWord):
     name = "Transmit Command"
 
     conditions = [
-        (FieldRef("recieve_transmit") == RecieveTransmitEnum.TRANSMIT),
+        (FieldReference("recieve_transmit") == RecieveTransmitEnum.TRANSMIT),
     ]
 
 
@@ -92,7 +92,7 @@ class RecieveCommand(CommandWord):
     name = "Recieve Command"
 
     conditions = [
-        (FieldRef("recieve_transmit") == RecieveTransmitEnum.RECIEVE),
+        (FieldReference("recieve_transmit") == RecieveTransmitEnum.RECIEVE),
     ]
 
 
@@ -101,8 +101,8 @@ class BroadcastRecieveCommand(CommandWord):
 
     conditions = [
         # remote terminal address = 31
-        (FieldRef("remote_terminal_address") == 0x1F),
-        (FieldRef("recieve_transmit") == RecieveTransmitEnum.RECIEVE),
+        (FieldReference("remote_terminal_address") == 0x1F),
+        (FieldReference("recieve_transmit") == RecieveTransmitEnum.RECIEVE),
     ]
 
 
@@ -111,8 +111,8 @@ class BroadcastTransmitCommand(CommandWord):
 
     conditions = [
         # remote terminal address = 31
-        (FieldRef("remote_terminal_address") == 0x1F),
-        (FieldRef("recieve_transmit") == RecieveTransmitEnum.TRANSMIT),
+        (FieldReference("remote_terminal_address") == 0x1F),
+        (FieldReference("recieve_transmit") == RecieveTransmitEnum.TRANSMIT),
     ]
 
 
@@ -223,12 +223,12 @@ class ControllerToRTTransfer(Struct):
 
     fields = [
         RecieveCommand,
-        Vector(DataWord, length=FieldRef("RecieveCommand.number_of_words")),
+        Vector(DataWord, length=FieldReference("RecieveCommand.number_of_words")),
         StatusWord,
     ]
 
     conditions = [
-        (FieldRef("StatusWord.remote_terminal_address") == 0x31),
+        (FieldReference("StatusWord.remote_terminal_address") == 0x31),
     ]
 
 
@@ -238,11 +238,11 @@ class RTToControllerTransfer(Struct):
     fields = [
         TransmitCommand,
         StatusWord,
-        Vector(DataWord, length=FieldRef("TransmitCommand.number_of_words")),
+        Vector(DataWord, length=FieldReference("TransmitCommand.number_of_words")),
     ]
 
     conditions = [
-        (FieldRef("TransmitCommmand.remote_terminal_address") == 0x31),
+        (FieldReference("TransmitCommmand.remote_terminal_address") == 0x31),
     ]
 
 
@@ -253,14 +253,14 @@ class RTToRTTransfer(Struct):
         RecieveCommand,
         TransmitCommand,
         StatusWord,
-        Vector(DataWord, length=FieldRef("RecieveCommand.number_of_words")),
+        Vector(DataWord, length=FieldReference("RecieveCommand.number_of_words")),
         StatusWord,
     ]
 
     conditions = [
-        (FieldRef("RecieveCommmand.remote_terminal_address") == 0x31),
+        (FieldReference("RecieveCommmand.remote_terminal_address") == 0x31),
         # TODO: Ambiguous (should refer to second entry)
-        (FieldRef("StatusWord.remote_terminal_address") == 0x31),
+        (FieldReference("StatusWord.remote_terminal_address") == 0x31),
     ]
 
 
@@ -295,7 +295,7 @@ class BroadcastControllerToRTTransfer(Struct):
 
     fields = [
         BroadcastRecieveCommand,
-        Vector(DataWord, length=FieldRef("BroadcastRecieveCommand.number_of_words")),
+        Vector(DataWord, length=FieldReference("BroadcastRecieveCommand.number_of_words")),
     ]
 
 
@@ -306,7 +306,7 @@ class BroadcastRTToRTTransfer(Struct):
         BroadcastRecieveCommand,
         TransmitCommand,
         StatusWord,
-        Vector(DataWord, length=FieldRef("BroadcastRecieveCommand.number_of_words")),
+        Vector(DataWord, length=FieldReference("BroadcastRecieveCommand.number_of_words")),
     ]
 
 
@@ -332,18 +332,16 @@ class MILSTD_1553_Intra_Packet_Header(Struct):
         UnsignedInteger("intra_packet_time_stamp", 8 * 8),
         MILSTD_1553_Intra_Packet_Data_Header,
         Union(
-            [
-                ControllerToRTTransfer,
-                RTToControllerTransfer,
-                RTToRTTransfer,
-                ModeCommandWithoutData,
-                ModeCommandWithDataTransmit,
-                ModeCommandWithDataRecieve,
-                BroadcastControllerToRTTransfer,
-                BroadcastRTToRTTransfer,
-                BroadcastModeCommandWithoutData,
-                BroadcastModeCommandWithData,
-            ]
+            ControllerToRTTransfer,
+            RTToControllerTransfer,
+            RTToRTTransfer,
+            ModeCommandWithoutData,
+            ModeCommandWithDataTransmit,
+            ModeCommandWithDataRecieve,
+            BroadcastControllerToRTTransfer,
+            BroadcastRTToRTTransfer,
+            BroadcastModeCommandWithoutData,
+            BroadcastModeCommandWithData,
         ),
     ]
 
@@ -374,5 +372,5 @@ class MILSTD_1553_Data_Packet_Format_1(Struct):
             24,
             help="indicates the binary value of the number of messages included in the packet.  An integral number of complete messages will be in each packe",
         ),
-        Vector(MILSTD_1553_Intra_Packet_Header, length=FieldRef("message_count")),
+        Vector(MILSTD_1553_Intra_Packet_Header, length=FieldReference("message_count")),
     ]

@@ -33,16 +33,16 @@ def node_label(node_struct):
         elif field[0] == Symbol("vector"):
             symbol, struct, length = field
             rows.append(struct_format.format(i, struct[1]))
-            edges.add((f"{struct_name}:{i}", struct[1] + ':0'))
+            edges.add((f"{struct_name}:{i}", struct[1] + ":0"))
         elif field[0] == Symbol("struct"):
             symbol, name, fields, conditions, additional = field
             rows.append(struct_format.format(i, name))
-            edges.add((f"{struct_name}:{i}", name + ':0'))
+            edges.add((f"{struct_name}:{i}", name + ":0"))
         elif field[0] == Symbol("union"):
             symbol, *structs = field
             rows.append(struct_format.format(i, "union"))
             for struct in structs:
-                edges.add((f"{struct_name}:{i}", struct[1] + ':0'))
+                edges.add((f"{struct_name}:{i}", struct[1] + ":0"))
 
     node = (struct_name, header + title + "\n".join(rows) + footer)
     return node, edges
