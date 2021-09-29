@@ -2,7 +2,6 @@
 Transformation to realize a given struct into all possible datatypes
 
 """
-from typing import List
 import itertools
 
 from bitnest.core import Expression, Symbol, list_
