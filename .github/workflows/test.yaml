@@ -25,6 +25,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install .[dev]
+          sudo apt install graphviz -y
       - name: Black Formatting
         run: |
           black --version
