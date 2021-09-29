@@ -1,7 +1,9 @@
 import textwrap
 import base64
 
-from bitnest.ast.core import Symbol, Expression
+from bitnest.core import Symbol, Expression
+
+# from bitnest.core import realize_paths, realize_offsets
 import bitnest.output.visualize
 
 
@@ -36,15 +38,14 @@ def markdown_section_link(section):
     return f"[{section}](#{section.replace(' ', '-')})"
 
 
-def path_table_html(path):
-    fields, structs = get_path_fields(path)
+def datatype_table_html(fields, regions):
     num_columns = len(fields)
 
     current_row, current_column = 0, 0
     rows = []
     row_string = ""
 
-    for position in sorted(structs):
+    for position in sorted(regions):
         depth, start, end = position
         if depth == current_row:
             pass
@@ -64,7 +65,12 @@ def path_table_html(path):
             row_string += f'<td colspan="{start - current_column}"></td>'
             current_column = start
 
-        row_string += f'<td colspan="{end - start}">{structs[position].name}</td>'
+        expression = Expression(regions[position])
+        if expression.symbol == Symbol("vector"):
+            row_string += f'<td colspan="{end - start}">vector</td>'
+        elif expression.symbol == Symbol("struct"):
+            row_string += f'<td colspan="{end - start}">{expression.name}</td>'
+
         current_column = end
 
     if current_column != num_columns:
@@ -74,7 +80,8 @@ def path_table_html(path):
     row_string = ""
 
     for field in fields:
-        row_string += f"<td>{field.name} {field.nbits}</td>"
+        field = Expression(field)
+        row_string += f"<td><div>{field.field_type}</div><div>{field.name}</div><div>{field.offset}</div><div>{field.size}</div></td>"
     rows.append(row_string)
 
     table_html = "<table>"
@@ -84,7 +91,7 @@ def path_table_html(path):
     return table_html
 
 
-def markdown_struct(struct_node):
+def markdown_struct(struct):
     """Takes a given Struct and creates a graphviz node label. It uses the
     table structure that graphviz supports. "ports" are used to create
     edges that point to the specific row within the struct.
@@ -106,29 +113,33 @@ def markdown_struct(struct_node):
 
     """
 
-    symbol, name, fields, conditions, additional = struct_node
-    docs = "\n".join(textwrap.wrap(additional.get("help", "")))
-    text = f"# {name}" "\n\n" f"{docs}" "\n\n" "## Structure\n\n"
+    docs = "\n".join(textwrap.wrap(struct.additional.get("help", "")))
+    text = f"# {struct.name}" "\n\n" f"{docs}" "\n\n" "## Structure\n\n"
 
     struct_conditions = []
-    for condition in conditions[1:]:
+    for condition in struct.conditions[1:]:
         struct_conditions.append(str(condition))
 
     headers = ["name", "data type", "number of bits", "description"]
     rows = []
 
-    for field in fields[1:]:
-        if field[0] == Symbol("field"):
-            symbol, field_type, name, offset, size, additional = field
-            rows.append([name, field_type, size, additional.get("help", "")])
-        elif field[0] == Symbol("vector"):
-            symbol, struct, length = field
-            rows.append(["", "vector", "", markdown_section_link(struct[1])])
-        elif field[0] == Symbol("struct"):
-            symbol, name, fields, conditions, additional = field
-            rows.append([name, "", "", markdown_section_link(name)])
-        elif field[0] == Symbol("union"):
-            symbol, *structs = field
+    for field in struct.fields[1:]:
+        field = Expression(field)
+        if field.symbol == Symbol("field"):
+            rows.append(
+                [
+                    field.name,
+                    field.field_type,
+                    field.size,
+                    field.additional.get("help", ""),
+                ]
+            )
+        elif field.symbol == Symbol("vector"):
+            rows.append(["", "vector", "", markdown_section_link(field.struct[1])])
+        elif field.symbol == Symbol("struct"):
+            rows.append([field.name, "", "", markdown_section_link(field.name)])
+        elif field.symbol == Symbol("union"):
+            symbol, *structs = field.expression
             rows.append(
                 [
                     "",
@@ -147,15 +158,15 @@ def markdown_struct(struct_node):
 
             """
         )
-        text += "\n".join(f" - `{_}`" for _ in struct_conditions) + "\n\n"
+        text += "\n".join(f" - `{_}`" for _ in struct.conditions) + "\n\n"
     return text
 
 
-def markdown(root_class, visualize=True, realize=True):
+def markdown(root_struct, visualize=True, realize=True):
     text = ""
 
     if visualize:
-        graph = bitnest.output.visualize.visualize(root_class)
+        graph = bitnest.output.visualize.visualize(root_struct)
         image = base64.b64encode(graph.pipe(format="png"))
         text += textwrap.dedent(
             f"""
@@ -167,30 +178,33 @@ def markdown(root_class, visualize=True, realize=True):
         )
 
     visited_structs = set()
-    for struct in Expression(root_class.expression()).find_symbol(
+    for struct in root_struct.expression().find_symbol(
         Symbol("struct"), order="pre_order"
     ):
-        name = struct[1]
-        if name not in visited_structs:
+        struct = Expression(struct)
+        if struct.name not in visited_structs:
             text += markdown_struct(struct)
-            visited_structs.add(struct[1])
+            visited_structs.add(struct.name)
 
-    # text += render_struct_descriptions(root_class, {root_class})
+    if realize:
+        datatypes = (
+            root_struct.expression()
+            .transform("realize_datatypes")
+            .transform("realize_offsets")
+            .transform("arithmetic_simplify")
+            .analysis("inspect_datatypes")
+        )
+        text += "\n# Realized Structures\n"
+        for i, (datatype, fields, regions) in enumerate(datatypes, start=1):
+            html_table = datatype_table_html(fields, regions)
+            text += textwrap.dedent(
+                """
 
-    # if realize:
-    #     datatype = realize_datatype(root_class)
-    #     datatype_paths = realize_datatype_paths(datatype)
-    #     html_tables = []
-    #     for path in datatype_paths:
-    #         html_tables.append(path_table_html(path))
-    #     html_tables_text = "\n\n".join(html_tables)
+                ## Structure {i}
 
-    #     text += textwrap.dedent(
-    #         """
-    #         # Realized Structures
+                {html_table}
 
-    #         {html_tables_text}
-    #         """
-    #     ).format(html_tables_text=html_tables_text)
+                """
+            ).format(i=i, html_table=html_table)
 
     return text

@@ -2,32 +2,31 @@ import operator
 
 import pytest
 
-from bitnest.ast.core import Expression, Variable, UniqueVariable, Symbol
+from bitnest.core import Expression, Variable, UniqueVariable, Symbol
 
 
 def test_not_expression():
     test_value = True
     v = Variable("test_value")
     expression = ~v
-    assert expression.eval(context={"test_value": test_value}) == (not test_value)
+    source = expression.backend("python")
+    assert eval(source, {"test_value": test_value}) == (not test_value)
 
 
 def test_and_operator():
     test_value = 1
     other_value = 2
     expression = Variable("test_value") & other_value
-    assert expression.eval(context={"test_value": test_value}) == (
-        test_value and other_value
-    )
+    source = expression.backend("python")
+    assert eval(source, {"test_value": test_value}) == (test_value and other_value)
 
 
 def test_or_operator():
     test_value = 1
     other_value = 2
     expression = Variable("test_value") | other_value
-    assert expression.eval(context={"test_value": test_value}) == (
-        test_value or other_value
-    )
+    source = expression.backend("python")
+    assert eval(source, {"test_value": test_value}) == (test_value or other_value)
 
 
 @pytest.mark.parametrize(
@@ -53,10 +52,9 @@ def test_binary_expressions(operator):
 
     v = Variable("test_value")
     expression = operator(v, other_value)
+    source = expression.backend("python")
 
-    assert expression.eval(context={"test_value": test_value}) == operator(
-        test_value, other_value
-    )
+    assert eval(source, {"test_value": test_value}) == operator(test_value, other_value)
 
 
 def test_post_order_replacement():
@@ -97,7 +95,9 @@ def test_post_order_replacement():
         },
         order="post_order",
     )
-    assert expression.eval(context={"test_a": test_a}) == ((test_a * 1) / 2)
+
+    source = expression.backend("python")
+    assert eval(source, context={"test_a": test_a}) == ((test_a * 1) / 2)
 
 
 def test_post_order_replacement():
@@ -120,14 +120,6 @@ def test_post_order_replacement():
             _args.append(arg)
         return (Symbol("truediv"), *_args)
 
-    expression.replace(
-        {
-            Symbol("add"): rewrite_add,
-            Symbol("mul"): rewrite_mul,
-        },
-        order="pre_order",
-    )
-
     # post order traversal
     # (left, ..., right, self) replacement of nodes
     # (test_a + 1) * 2
@@ -138,7 +130,17 @@ def test_post_order_replacement():
     # (<here>truediv (mul (variable test_a) 1) 2)
     # (test_a / 1) / 2
     # (truediv (<here>mul (variable test_a) 1) 2)
-    assert expression.eval(context={"test_a": test_a}) == ((test_a / 1) / 2)
+
+    expression.replace(
+        {
+            Symbol("add"): rewrite_add,
+            Symbol("mul"): rewrite_mul,
+        },
+        order="pre_order",
+    )
+
+    source = expression.backend("python")
+    assert eval(source, {"test_a": test_a}) == ((test_a / 1) / 2)
 
 
 def test_find_nodes():

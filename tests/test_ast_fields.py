@@ -2,7 +2,7 @@ import enum
 
 import pytest
 
-from bitnest.ast import field
+from bitnest import field
 
 
 class AnEnum(enum.Enum):

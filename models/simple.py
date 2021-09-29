@@ -1,4 +1,4 @@
-from bitnest.ast.field import (
+from bitnest.field import (
     Struct,
     UnsignedInteger,
     Bits,

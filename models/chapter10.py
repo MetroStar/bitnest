@@ -5,7 +5,7 @@ https://www.irig106.org/docs/106-07/chapter10.pdf
 """
 import enum
 
-from bitnest.ast.field import (
+from bitnest.field import (
     Struct,
     UnsignedInteger,
     Boolean,
@@ -295,7 +295,9 @@ class BroadcastControllerToRTTransfer(Struct):
 
     fields = [
         BroadcastRecieveCommand,
-        Vector(DataWord, length=FieldReference("BroadcastRecieveCommand.number_of_words")),
+        Vector(
+            DataWord, length=FieldReference("BroadcastRecieveCommand.number_of_words")
+        ),
     ]
 
 
@@ -306,7 +308,9 @@ class BroadcastRTToRTTransfer(Struct):
         BroadcastRecieveCommand,
         TransmitCommand,
         StatusWord,
-        Vector(DataWord, length=FieldReference("BroadcastRecieveCommand.number_of_words")),
+        Vector(
+            DataWord, length=FieldReference("BroadcastRecieveCommand.number_of_words")
+        ),
     ]
 
 
