@@ -27,7 +27,8 @@ setup(
     keywords="struct, python",
     packages=find_packages(where="."),
     install_requires=[
-        'graphviz'
+        'graphviz',
+        'astor',
     ],
     extras_require={
         "dev": [
