@@ -1,8 +1,6 @@
-import collections
-
 import graphviz
 
-from bitnest.field import Struct, Field, Union, Vector
+from bitnest.core import Symbol, Expression
 
 
 def node_label(struct):
@@ -17,50 +15,50 @@ def node_label(struct):
     </table>
 
     """
-    name = struct.__name__
     header = '<<table border="0" cellborder="1" cellspacing="0">\n'
-    title = f'<tr><td port="0" colspan="3"><b>{struct.__name__}</b></td></tr>'
+    title = f'<tr><td port="0" colspan="3"><b>{struct.name}</b></td></tr>'
     footer = "</table>>"
     field_format = "<tr><td>{}</td><td>{}</td><td>{}</td></tr>"
     struct_format = '<tr><td colspan="3" port="{}">{}</td></tr>'
     rows = []
-    struct_references = collections.defaultdict(list)
+    edges = set()
 
-    for i, field in enumerate(struct.fields, start=1):
-        if isinstance(field, Union):
-            for union_struct in field.structs:
-                struct_references[union_struct].append(f"{name}:{i}")
-            rows.append(struct_format.format(i, field.__class__.__name__))
+    for i, field in enumerate(struct.fields[1:], start=1):
+        field = Expression(field)
+        if field.symbol == Symbol("field"):
+            rows.append(field_format.format(field.name, field.field_type, field.size))
+        elif field.symbol == Symbol("vector"):
+            rows.append(struct_format.format(i, field.struct[1]))
+            edges.add((f"{struct.name}:{i}", field.struct[1] + ":0"))
+        elif field.symbol == Symbol("struct"):
+            rows.append(struct_format.format(i, field.name))
+            edges.add((f"{struct.name}:{i}", field.name + ":0"))
+        elif field.symbol == Symbol("union"):
+            symbol, *structs = field.expression
+            rows.append(struct_format.format(i, "union"))
+            for _struct in structs:
+                edges.add((f"{struct.name}:{i}", _struct[1] + ":0"))
 
-        elif isinstance(field, Vector):
-            struct_references[field.klass].append(f"{name}:{i}")
-            rows.append(struct_format.format(i, field.__class__.__name__))
-        elif isinstance(field, Field):
-            rows.append(
-                field_format.format(field.name, field.__class__.__name__, field.nbits)
-            )
-        elif issubclass(field, Struct):
-            struct_references[field].append(f"{name}:{i}")
-            rows.append(struct_format.format(i, field.__name__))
-
-    return name, header + title + "\n".join(rows) + footer, struct_references
+    node = (struct.name, header + title + "\n".join(rows) + footer)
+    return node, edges
 
 
-def visualize(root_class):
+def visualize(root_struct):
     graph = graphviz.Digraph("structs", node_attr={"shape": "plaintext"})
-    _visualize(graph, root_class, visited_edges=set())
+
+    visited_nodes = set()
+    visited_edges = set()
+
+    for struct in root_struct.expression().find_symbol(
+        Symbol("struct"), order="pre_order"
+    ):
+        if struct.name not in visited_nodes:
+            node, edges = node_label(struct)
+            graph.node(*node)
+            for edge in edges:
+                if edge not in visited_edges:
+                    graph.edge(*edge)
+                    visited_edges.add(edge)
+            visited_nodes.add(struct.name)
+
     return graph
-
-
-def _visualize(graph, node, visited_edges):
-    """Breadth first traversal of all structs mentioned from root
-    struct"""
-    name, label, struct_references = node_label(node)
-    for struct in struct_references:
-        for field in struct_references[struct]:
-            edge = (field, struct.__name__ + ":0")
-            if edge not in visited_edges:
-                graph.edge(*edge)
-                visited_edges.add(edge)
-        _visualize(graph, struct, visited_edges)
-    graph.node(name, label)

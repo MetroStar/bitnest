@@ -3,7 +3,9 @@
 pkgs.mkShell {
   buildInputs = [
     pythonPackages.graphviz
+    pythonPackages.astor
     # development
+    pythonPackages.ipython
     pythonPackages.pytest
     pythonPackages.black
     pythonPackages.flake8

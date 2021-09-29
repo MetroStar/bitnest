@@ -1,4 +1,11 @@
-from bitnest.field import Struct, UnsignedInteger, Bits, Union, FieldRef, Vector
+from bitnest.field import (
+    Struct,
+    UnsignedInteger,
+    Bits,
+    Union,
+    FieldReference,
+    Vector,
+)
 
 
 class CommandWord(Struct):
@@ -23,10 +30,10 @@ class RTToController(Struct):
 
     fields = [
         CommandWord,
-        Vector(DataWord, length=FieldRef("CommandWord.number_of_words")),
+        Vector(DataWord, length=FieldReference("CommandWord.number_of_words")),
     ]
 
-    conditions = [(FieldRef("CommandWord.remote_terminal_address") == 0x1F)]
+    conditions = [(FieldReference("CommandWord.remote_terminal_address") == 0x1F)]
 
 
 class ControllerToRT(Struct):
@@ -36,7 +43,7 @@ class ControllerToRT(Struct):
         CommandWord,
     ]
 
-    conditions = [(FieldRef("CommandWord.number_of_words") == 0x0)]
+    conditions = [(FieldReference("CommandWord.number_of_words") == 0x0)]
 
 
 class MILSTD_1553_Message(Struct):
@@ -51,9 +58,7 @@ class MILSTD_1553_Message(Struct):
     fields = [
         UnsignedInteger("bus_id", 8),
         Union(
-            [
-                RTToController,
-                ControllerToRT,
-            ]
+            RTToController,
+            ControllerToRT,
         ),
     ]

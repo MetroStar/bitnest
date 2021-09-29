@@ -1,8 +1,9 @@
 import textwrap
 import base64
 
-from bitnest.field import Union, Vector, Field, Struct
-from bitnest.core import realize_datatype, realize_datatype_paths, get_path_fields
+from bitnest.core import Symbol, Expression
+
+# from bitnest.core import realize_paths, realize_offsets
 import bitnest.output.visualize
 
 
@@ -33,15 +34,18 @@ def markdown_table(header, rows):
     )
 
 
-def path_table_html(path):
-    fields, structs = get_path_fields(path)
+def markdown_section_link(section):
+    return f"[{section}](#{section.replace(' ', '-')})"
+
+
+def datatype_table_html(fields, regions):
     num_columns = len(fields)
 
     current_row, current_column = 0, 0
     rows = []
     row_string = ""
 
-    for position in sorted(structs):
+    for position in sorted(regions):
         depth, start, end = position
         if depth == current_row:
             pass
@@ -61,7 +65,12 @@ def path_table_html(path):
             row_string += f'<td colspan="{start - current_column}"></td>'
             current_column = start
 
-        row_string += f'<td colspan="{end - start}">{structs[position].name}</td>'
+        expression = Expression(regions[position])
+        if expression.symbol == Symbol("vector"):
+            row_string += f'<td colspan="{end - start}">vector</td>'
+        elif expression.symbol == Symbol("struct"):
+            row_string += f'<td colspan="{end - start}">{expression.name}</td>'
+
         current_column = end
 
     if current_column != num_columns:
@@ -71,7 +80,8 @@ def path_table_html(path):
     row_string = ""
 
     for field in fields:
-        row_string += f'<td>{field.name} {field.nbits}</td>'
+        field = Expression(field)
+        row_string += f"<td><div>{field.field_type}</div><div>{field.name}</div><div>{field.offset}</div><div>{field.size}</div></td>"
     rows.append(row_string)
 
     table_html = "<table>"
@@ -81,11 +91,7 @@ def path_table_html(path):
     return table_html
 
 
-def markdown_section_link(section):
-    return f"[{section}](#{section})"
-
-
-def node_section(struct):
+def markdown_struct(struct):
     """Takes a given Struct and creates a graphviz node label. It uses the
     table structure that graphviz supports. "ports" are used to create
     edges that point to the specific row within the struct.
@@ -107,117 +113,98 @@ def node_section(struct):
 
     """
 
+    docs = "\n".join(textwrap.wrap(struct.additional.get("help", "")))
+    text = f"# {struct.name}" "\n\n" f"{docs}" "\n\n" "## Structure\n\n"
+
+    struct_conditions = []
+    for condition in struct.conditions[1:]:
+        struct_conditions.append(str(condition))
+
     headers = ["name", "data type", "number of bits", "description"]
     rows = []
-    structs = set()
 
-    for field in struct.fields:
-        if isinstance(field, Union):
-            for union_struct in field.structs:
-                if union_struct not in structs:
-                    structs.add(union_struct)
+    for field in struct.fields[1:]:
+        field = Expression(field)
+        if field.symbol == Symbol("field"):
+            rows.append(
+                [
+                    field.name,
+                    field.field_type,
+                    field.size,
+                    field.additional.get("help", ""),
+                ]
+            )
+        elif field.symbol == Symbol("vector"):
+            rows.append(["", "vector", "", markdown_section_link(field.struct[1])])
+        elif field.symbol == Symbol("struct"):
+            rows.append([field.name, "", "", markdown_section_link(field.name)])
+        elif field.symbol == Symbol("union"):
+            symbol, *structs = field.expression
             rows.append(
                 [
                     "",
-                    f'{field.__class__.__name__}[{", ".join(markdown_section_link(s.__name__) for s in field.structs)}]',
+                    "union",
                     "",
-                    "",
-                ]
-            )
-        elif isinstance(field, Vector):
-            if field.klass not in structs:
-                structs.add(field.klass)
-            rows.append(
-                [
-                    "",
-                    field.__class__.__name__,
-                    "",
-                    markdown_section_link(field.klass.__name__),
+                    ", ".join([markdown_section_link(_[1]) for _ in structs]),
                 ]
             )
 
-        elif isinstance(field, Field):
-            rows.append(
-                [field.name, field.__class__.__name__, field.nbits, field.help or ""]
-            )
-        elif issubclass(field, Struct):
-            if field not in structs:
-                structs.add(field)
-            rows.append(["", markdown_section_link(field.__name__), "", ""])
+    text += markdown_table(headers, rows) + "\n"
 
-    table = markdown_table(headers, rows)
-    conditions = "\n\n".join(f" - {condition}" for condition in struct.conditions)
+    if struct_conditions:
+        text += textwrap.dedent(
+            """
+            ## Conditions
 
-    section = textwrap.dedent(
-        """
-    # {name}
-
-    {doc}
-
-    ## Structure
-
-    {table}
-    """
-    )
-
-    conditions_section = textwrap.dedent(
-        """
-    ## Conditions
-
-    {conditions}
-    """
-    )
-
-    text = section.format(
-        name=struct.__name__,
-        doc="\n".join(textwrap.wrap(struct.__doc__ or "")),
-        table=textwrap.dedent(table),
-    )
-
-    if conditions:
-        text += conditions_section.format(conditions=textwrap.dedent(conditions))
-
-    return text, structs
-
-
-def render_struct_descriptions(struct, visited_structs):
-    text, structs = node_section(struct)
-    unvisited_structs = structs - visited_structs
-    visited_structs = structs | visited_structs
-    for _struct in unvisited_structs:
-        text += render_struct_descriptions(_struct, visited_structs)
+            """
+        )
+        text += "\n".join(f" - `{_}`" for _ in struct.conditions) + "\n\n"
     return text
 
 
-def markdown(root_class, visualize=True, realize=True):
+def markdown(root_struct, visualize=True, realize=True):
     text = ""
 
     if visualize:
-        graph = bitnest.output.visualize.visualize(root_class)
-        image = base64.b64encode(graph.pipe(format='png'))
-        text += textwrap.dedent(f'''
+        graph = bitnest.output.visualize.visualize(root_struct)
+        image = base64.b64encode(graph.pipe(format="png"))
+        text += textwrap.dedent(
+            f"""
         # Visualize
 
         ![image](data:image/png;base64,{image.decode("utf-8")})
 
-        ''')
+        """
+        )
 
-    text += render_struct_descriptions(root_class, {root_class})
+    visited_structs = set()
+    for struct in root_struct.expression().find_symbol(
+        Symbol("struct"), order="pre_order"
+    ):
+        struct = Expression(struct)
+        if struct.name not in visited_structs:
+            text += markdown_struct(struct)
+            visited_structs.add(struct.name)
 
     if realize:
-        datatype = realize_datatype(root_class)
-        datatype_paths = realize_datatype_paths(datatype)
-        html_tables = []
-        for path in datatype_paths:
-            html_tables.append(path_table_html(path))
-        html_tables_text = '\n\n'.join(html_tables)
+        datatypes = (
+            root_struct.expression()
+            .transform("realize_datatypes")
+            .transform("realize_offsets")
+            .transform("arithmetic_simplify")
+            .analysis("inspect_datatypes")
+        )
+        text += "\n# Realized Structures\n"
+        for i, (datatype, fields, regions) in enumerate(datatypes, start=1):
+            html_table = datatype_table_html(fields, regions)
+            text += textwrap.dedent(
+                """
 
-        text += textwrap.dedent(
-            """
-            # Realized Structures
+                ## Structure {i}
 
-            {html_tables_text}
-            """
-        ).format(html_tables_text=html_tables_text)
+                {html_table}
+
+                """
+            ).format(i=i, html_table=html_table)
 
     return text
