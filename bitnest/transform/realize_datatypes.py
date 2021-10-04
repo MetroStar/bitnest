@@ -1,5 +1,5 @@
-"""
-Transformation to realize a given struct into all possible datatypes
+"""Transformation to realize a given struct into all possible
+datatypes and uniquely label all fields
 
 """
 import itertools
@@ -9,9 +9,11 @@ from bitnest.core import Expression, Symbol, list_
 
 def realize_datatypes(struct: Expression) -> Expression:
     _struct = Expression(struct)
+    counter = itertools.count()
 
     def handle_field(symbol, args):
-        return [(symbol, *args)]
+        field_type, name, offset, size, id, additional = args
+        return [(symbol, field_type, name, offset, size, next(counter), additional)]
 
     def handle_vector(symbol, args):
         paths = []

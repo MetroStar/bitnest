@@ -19,13 +19,14 @@ def realize_offsets(path: Expression) -> Expression:
             current_offset = None
             yield (symbol, *args)
         elif symbol == Symbol("field"):
-            field_type, name, offset, size, additional = args
+            field_type, name, offset, size, id, additional = args
             field = (
                 symbol,
                 field_type,
                 name,
                 current_offset.expression,
                 size,
+                id,
                 additional,
             )
             current_offset = current_offset + size

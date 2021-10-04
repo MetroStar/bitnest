@@ -81,7 +81,7 @@ def datatype_table_html(fields, regions):
 
     for field in fields:
         field = Expression(field)
-        row_string += f"<td><div>{field.field_type}</div><div>{field.name}</div><div>{field.offset}</div><div>{field.size}</div></td>"
+        row_string += f"<td><div>{field.id}</div><div>{field.field_type}</div><div>{field.name}</div><div>{field.offset}</div><div>{field.size}</div></td>"
     rows.append(row_string)
 
     table_html = "<table>"
@@ -190,12 +190,13 @@ def markdown(root_struct, visualize=True, realize=True):
         datatypes = (
             root_struct.expression()
             .transform("realize_datatypes")
+            .transform("realize_conditions")
             .transform("realize_offsets")
             .transform("arithmetic_simplify")
             .analysis("inspect_datatypes")
         )
         text += "\n# Realized Structures\n"
-        for i, (datatype, fields, regions) in enumerate(datatypes, start=1):
+        for i, (datatype, fields, conditions, regions) in enumerate(datatypes, start=1):
             html_table = datatype_table_html(fields, regions)
             text += textwrap.dedent(
                 """
@@ -206,5 +207,19 @@ def markdown(root_struct, visualize=True, realize=True):
 
                 """
             ).format(i=i, html_table=html_table)
+
+            if conditions:
+                text_conditions = "\n".join(
+                    [f" - {condition}" for condition in conditions]
+                )
+                text += textwrap.dedent(
+                    """
+
+                    ### Conditions
+
+                    {text_conditions}
+
+                    """
+                ).format(text_conditions=text_conditions)
 
     return text

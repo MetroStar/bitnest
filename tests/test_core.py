@@ -12,6 +12,7 @@ def test_realize_paths(struct):
     expression = struct.expression()
     datatypes = (
         expression.transform("realize_datatypes")
+        .transform("realize_conditions")
         .transform("realize_offsets")
         .transform("arithmetic_simplify")
     )

@@ -223,12 +223,12 @@ class ControllerToRTTransfer(Struct):
 
     fields = [
         RecieveCommand,
-        Vector(DataWord, length=FieldReference("RecieveCommand.number_of_words")),
+        Vector(DataWord, length=FieldReference("Recieve Command.number_of_words")),
         StatusWord,
     ]
 
     conditions = [
-        (FieldReference("StatusWord.remote_terminal_address") == 0x31),
+        (FieldReference("Status Word.remote_terminal_address") == 0x31),
     ]
 
 
@@ -238,11 +238,11 @@ class RTToControllerTransfer(Struct):
     fields = [
         TransmitCommand,
         StatusWord,
-        Vector(DataWord, length=FieldReference("TransmitCommand.number_of_words")),
+        Vector(DataWord, length=FieldReference("Transmit Command.number_of_words")),
     ]
 
     conditions = [
-        (FieldReference("TransmitCommmand.remote_terminal_address") == 0x31),
+        (FieldReference("Transmit Command.remote_terminal_address") == 0x31),
     ]
 
 
@@ -253,14 +253,14 @@ class RTToRTTransfer(Struct):
         RecieveCommand,
         TransmitCommand,
         StatusWord,
-        Vector(DataWord, length=FieldReference("RecieveCommand.number_of_words")),
+        Vector(DataWord, length=FieldReference("Recieve Command.number_of_words")),
         StatusWord,
     ]
 
     conditions = [
-        (FieldReference("RecieveCommmand.remote_terminal_address") == 0x31),
+        (FieldReference("Recieve Command.remote_terminal_address") == 0x31),
         # TODO: Ambiguous (should refer to second entry)
-        (FieldReference("StatusWord.remote_terminal_address") == 0x31),
+        (FieldReference("Status Word.remote_terminal_address") == 0x31),
     ]
 
 
@@ -296,7 +296,7 @@ class BroadcastControllerToRTTransfer(Struct):
     fields = [
         BroadcastRecieveCommand,
         Vector(
-            DataWord, length=FieldReference("BroadcastRecieveCommand.number_of_words")
+            DataWord, length=FieldReference("Broadcast Recieve Command.number_of_words")
         ),
     ]
 
@@ -309,7 +309,7 @@ class BroadcastRTToRTTransfer(Struct):
         TransmitCommand,
         StatusWord,
         Vector(
-            DataWord, length=FieldReference("BroadcastRecieveCommand.number_of_words")
+            DataWord, length=FieldReference("Broadcast Recieve Command.number_of_words")
         ),
     ]
 

@@ -5,6 +5,7 @@ from bitnest.core import Expression, Symbol
 
 def _inspect_datatype(datatype: Expression):
     fields = []
+    conditions = []
     depth = 0
     regions = {}
 
@@ -30,13 +31,15 @@ def _inspect_datatype(datatype: Expression):
             symbol, args = yield (symbol, *args)
             depth = depth - 1
             regions[(depth, start, len(fields))] = (symbol, *args)
+            for condition in Expression((symbol, *args)).conditions[1:]:
+                conditions.append(condition)
             yield (symbol, *args)
         else:
             symbol, args = yield (symbol, *args)
             yield (symbol, *args)
 
     datatype.replace(replacement_function=replacement_function)
-    return (datatype, fields, regions)
+    return (datatype, fields, conditions, regions)
 
 
 def inspect_datatypes(path: Expression) -> List:

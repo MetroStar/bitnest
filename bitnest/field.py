@@ -13,13 +13,14 @@ from bitnest.core import (
 
 ATTRIBUTE_MAPPING.update(
     {
-        Symbol("field_reference"): ["symbol", "name"],
+        Symbol("field_reference"): ["symbol", "name", "id"],
         Symbol("field"): [
             "symbol",
             "field_type",
             "name",
             "offset",
             "size",
+            "id",
             "additional",
         ],
         Symbol("struct"): ["symbol", "name", "fields", "conditions", "additional"],
@@ -28,13 +29,16 @@ ATTRIBUTE_MAPPING.update(
 )
 
 
-def FieldReference(field_name: str):
-    return Expression((Symbol("field_reference"), field_name))
+def FieldReference(field_name: str, id: int = None):
+    return Expression((Symbol("field_reference"), field_name, id))
 
 
-def Field(name: str, size: int, field_type: str, offset=None, **additional):
+def Field(name: str, size: int, field_type: str, offset=None, id=None, **additional):
+    if "." in name:
+        raise ValueError(f'invalid field name={name} cannot have "." within name')
+
     return Expression(
-        (Symbol("field"), field_type, name, offset, Integer(size), additional)
+        (Symbol("field"), field_type, name, offset, Integer(size), id, additional)
     )
 
 
@@ -70,6 +74,11 @@ class Struct:
 
     @classmethod
     def expression(cls) -> Expression:
+        if "." in cls.name:
+            raise ValueError(
+                f'invalid struct name={cls.name} cannot have "." within name'
+            )
+
         fields = []
         for field in cls.fields:
             if isinstance(field, type) and issubclass(field, Struct):
