@@ -44,6 +44,9 @@ ATTRIBUTE_MAPPING = {
     Symbol("integer"): ["symbol", "value"],
     Symbol("float"): ["symbol", "value"],
     Symbol("variable"): ["symbol", "name"],
+    Symbol("index"): ["symbol", "value", "start", "stop"],
+    Symbol("assign"): ["symbol", "target", "value"],
+    Symbol("if"): ["symbol", "condition", "expr"],
 }
 
 
@@ -167,11 +170,11 @@ class Expression:
     def __invert__(self) -> "Expression":  # logical not
         return self._lazy_op(Symbol("not"), self)
 
-    def __and__(self, other) -> "Expression":  # logical and
-        return self._lazy_op(Symbol("and"), self, other)
+    def __and__(self, other) -> "Expression":
+        return self._lazy_op(Symbol("logical_and"), self, other)
 
-    def __or__(self, other) -> "Expression":  # logical or
-        return self._lazy_op(Symbol("or"), self, other)
+    def __or__(self, other) -> "Expression":
+        return self._lazy_op(Symbol("logical_or"), self, other)
 
     def __add__(self, other) -> "Expression":
         return self._lazy_op(Symbol("add"), self, other)
@@ -216,6 +219,18 @@ def quote(value) -> Expression:
 
 def list_(*values) -> Expression:
     return Expression((Symbol("list"), *values))
+
+
+def assign(target: Expression, value: Expression):
+    return Expression((Symbol("assign"), target, value))
+
+
+def if_(condition: Expression, expr: Expression):
+    return Expression((Symbol("if"), condition, expr))
+
+
+def statements(*exprs):
+    return Expression((Symbol("statements"), *exprs))
 
 
 def Variable(name: str) -> Expression:

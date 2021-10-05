@@ -21,8 +21,12 @@ def binary_operation(symbol, args):
 
 DEFAULT_SYMBOL_MAPPING = {
     Symbol("not"): lambda symbol, args: ast.UnaryOp(ast.Not(), args[0]),
-    Symbol("and"): lambda symbol, args: ast.BoolOp(ast.And(), [args[0], args[1]]),
-    Symbol("or"): lambda symbol, args: ast.BoolOp(ast.Or(), [args[0], args[1]]),
+    Symbol("logical_and"): lambda symbol, args: ast.BoolOp(
+        ast.And(), [args[0], args[1]]
+    ),
+    Symbol("logical_or"): lambda symbol, args: ast.BoolOp(ast.Or(), [args[0], args[1]]),
+    Symbol("bit_and"): lambda symbol, args: ast.BinOp(args[0], ast.BitAnd(), args[1]),
+    Symbol("bit_or"): lambda symbol, args: ast.BinOp(args[0], ast.BitOr(), args[1]),
     Symbol("mod"): lambda symbol, args: ast.BinOp(args[0], ast.Mod(), args[1]),
     Symbol("add"): binary_operation,
     Symbol("sub"): binary_operation,
@@ -38,6 +42,12 @@ DEFAULT_SYMBOL_MAPPING = {
     Symbol("variable"): lambda symbol, args: ast.Name(args[0]),
     Symbol("integer"): lambda symbol, args: ast.Constant(args[0]),
     Symbol("float"): lambda symbol, args: ast.Constant(args[0]),
+    Symbol("index"): lambda symbol, args: ast.Subscript(
+        value=args[0], slice=ast.Slice(lower=args[1], upper=args[2])
+    ),
+    Symbol("assign"): lambda symbol, args: ast.Assign(targets=[args[0]], value=args[1]),
+    Symbol("if"): lambda symbol, args: ast.If(test=args[0], body=[args[1]], orelse=[]),
+    Symbol("statements"): lambda symbol, args: [_ for _ in args],
 }
 
 
@@ -49,4 +59,9 @@ def to_python_ast(expression: Expression) -> ast.AST:
 
 def python(expression: Expression) -> str:
     expression_ast = to_python_ast(expression)
+
+    # terminate statements which render as lists in ast
+    if isinstance(expression_ast, list):
+        expression_ast = ast.Module(expression_ast)
+
     return astor.to_source(expression_ast)
