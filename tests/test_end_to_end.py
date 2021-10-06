@@ -10,9 +10,11 @@ from models.chapter10 import MILSTD_1553_Data_Packet_Format_1
 )
 def test_realize_paths(struct):
     expression = struct.expression()
-    datatypes = (
+    source = (
         expression.transform("realize_datatypes")
         .transform("realize_conditions")
         .transform("realize_offsets")
+        .transform("parser_datatype")
         .transform("arithmetic_simplify")
+        .backend("python")
     )

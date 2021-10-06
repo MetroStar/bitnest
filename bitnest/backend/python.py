@@ -42,6 +42,7 @@ DEFAULT_SYMBOL_MAPPING = {
     Symbol("variable"): lambda symbol, args: ast.Name(args[0]),
     Symbol("integer"): lambda symbol, args: ast.Constant(args[0]),
     Symbol("float"): lambda symbol, args: ast.Constant(args[0]),
+    Symbol("enum"): lambda symbol, args: ast.Constant(args[0].value),
     Symbol("index"): lambda symbol, args: ast.Subscript(
         value=args[0], slice=ast.Slice(lower=args[1], upper=args[2])
     ),

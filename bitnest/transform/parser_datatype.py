@@ -47,22 +47,30 @@ def parser_datatype(
             )
             _conditions.append(condition_expression)
 
-        _statements.append(
-            if_(
-                functools.reduce(
-                    lambda left, right: (Symbol("and"), left, right), _conditions
-                ),
-                assign(
+        datatype_assignment = assign(
+            Variable(datatype_mask_name),
+            Expression(
+                (
+                    Symbol("bit_or"),
                     Variable(datatype_mask_name),
-                    Expression(
-                        (
-                            Symbol("bit_or"),
-                            Variable(datatype_mask_name),
-                            Integer(2 ** i),
-                        )
-                    ),
-                ),
-            )
+                    Integer(2 ** i),
+                )
+            ),
         )
+
+        if _conditions:
+            _statements.append(
+                if_(
+                    functools.reduce(
+                        lambda left, right: Expression(
+                            (Symbol("logical_and"), left, right)
+                        ),
+                        _conditions,
+                    ),
+                    datatype_assignment,
+                )
+            )
+        else:
+            _statements.append(datatype_assignment)
 
     return Expression(statements(*_statements))

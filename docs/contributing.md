@@ -132,6 +132,7 @@ necessary for representing programs to process the structures.
  - equal `eq`, not equal `ne`, less than `lt`, greater than `gt`, less than equal `le`, greater than equal `ge`
  - integer `integer` 
  - float `float`
+ - enum `enum`
 
 ### Field Nodes
 
@@ -552,7 +553,10 @@ We visit the tree in post order.
  - `(integer 3)` -> `ast.Constant(3)`
  - `(eq ast.BinOp(ast.Add() ast.Constant(1) ast.Name("a")) ast.Constant(3))` -> `ast.Compare(ast.BinOp(ast.Add() ast.Constant(1) ast.Name("a")), ops=[ast.Eq()], comparators=[ast.Constant(3)])`
 
-Now that we have the ast representation in python `ast.Compare(ast.BinOp(ast.Add() ast.Constant(1) ast.Name("a")), ops=[ast.Eq()], comparators=[ast.Constant(3)])` we can `astor.tosource(...)` on the ast and get the source code.
+Now that we have the ast representation in python
+`ast.Compare(ast.BinOp(ast.Add() ast.Constant(1) ast.Name("a")),
+ops=[ast.Eq()], comparators=[ast.Constant(3)])` we can
+`astor.tosource(...)` on the ast and get the source code.
 
 ```python
 ((1 + a) == 3)

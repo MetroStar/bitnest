@@ -1,3 +1,4 @@
+import enum
 import itertools
 from typing import Callable, Dict, Generator, List, Optional
 import importlib
@@ -43,6 +44,7 @@ def replace_nodes(node, replacement_function: Generator):
 ATTRIBUTE_MAPPING = {
     Symbol("integer"): ["symbol", "value"],
     Symbol("float"): ["symbol", "value"],
+    Symbol("enum"): ["symbol", "value"],
     Symbol("variable"): ["symbol", "name"],
     Symbol("index"): ["symbol", "value", "start", "stop"],
     Symbol("assign"): ["symbol", "target", "value"],
@@ -103,6 +105,8 @@ class Expression:
                 arg = Integer(arg)
             elif isinstance(arg, float):
                 arg = Float(arg)
+            elif isinstance(arg, enum.Enum):
+                arg = Enum(arg)
 
             if isinstance(arg, self.__class__):
                 arguments.append(arg.expression)
@@ -256,3 +260,7 @@ def Integer(value: int) -> Expression:
 
 def Float(value: int) -> Expression:
     return Expression((Symbol("float"), value))
+
+
+def Enum(value: enum.Enum) -> Expression:
+    return Expression((Symbol("enum"), value))
