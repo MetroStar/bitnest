@@ -33,6 +33,7 @@ setup(
     extras_require={
         "dev": [
             "pytest",
+            "pytest-cov",
             "black==21.5b0",
             "flake8",
             "sphinx",

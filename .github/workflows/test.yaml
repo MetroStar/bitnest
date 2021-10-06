@@ -37,7 +37,7 @@ jobs:
           flake8
       - name: Run tests
         run: |
-          pytest
+          pytest --cov-report term --cov=bitnest tests/
 
   docs-bitnest:
     name: 'Sphinx docs'

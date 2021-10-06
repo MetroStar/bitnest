@@ -7,6 +7,7 @@ pkgs.mkShell {
     # development
     pythonPackages.ipython
     pythonPackages.pytest
+    pythonPackages.pytest-cov
     pythonPackages.black
     pythonPackages.flake8
     pythonPackages.sphinx
