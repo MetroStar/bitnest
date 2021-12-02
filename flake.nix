@@ -11,7 +11,7 @@
 
         pythonPackages = pkgs.python3Packages;
       in {
-      defaultPackage.x86_64-linux = pkgs.python3.buildPythonPackage {
+      defaultPackage.x86_64-linux = pythonPackages.buildPythonPackage {
         pname = "bitnest";
         version = "0.1.0";
 
@@ -21,6 +21,15 @@
           pythonPackages.graphviz
           pythonPackages.astor
         ];
+
+        checkInputs = [
+          pythonPackages.pytest
+          pythonPackages.pytest-cov
+        ];
+
+        checkPhase = ''
+          pytest
+        '';
       };
 
        devShell.x86_64-linux = pkgs.mkShell {
