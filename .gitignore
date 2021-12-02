@@ -7,3 +7,6 @@ docs/_build
 
 # coverage
 .coverage
+
+# nix
+.direnv
